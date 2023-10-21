@@ -1,84 +1,144 @@
+% --------------------------------------------------------
+% BUFFER READING RELATED FUNCTIONS
+
 clear_buffer:-
 	repeat,
 	get_char(C),
 	C='\n',
 	!.
+	
+get_char_not_nl('\n',Next):-
+	get_char(_),
+	get_char_not_nl(Next).
+get_char_not_nl(Char,Char):-
+	get_char(_).
 
+convert_char_to_number(Ascii, Number):-
+	char_code(Ascii, Code),
+	Number is Code - 48.
 
-% Initial board
-initial_board([[[a, 8, x], [b, 8, x], [c, 8, x], [d, 8, x], [e, 8, x], [f, 8, x], [g, 8, x], [h, 8, x]],
-               [[a, 7, x], [b, 7, x], [c, 7, x], [d, 7, x], [e, 7, x], [f, 7, x], [g, 7, x], [h, 7, x]],
-               [[a, 6, x], [b, 6, x], [c, 6, x], [d, 6, x], [e, 6, x], [f, 6, x], [g, 6, x], [h, 6, x]],
-               [[a, 5, x], [b, 5, x], [c, 5, x], [d, 5, x], [e, 5, x], [f, 5, x], [g, 5, x], [h, 5, x]],
-               [[a, 4, x], [b, 4, x], [c, 4, x], [d, 4, x], [e, 4, x], [f, 4, x], [g, 4, x], [h, 4, x]],
-               [[a, 3, x], [b, 3, x], [c, 3, x], [d, 3, x], [e, 3, x], [f, 3, x], [g, 3, x], [h, 3, x]],
-               [[a, 2, x], [b, 2, x], [c, 2, x], [d, 2, x], [e, 2, x], [f, 2, x], [g, 2, x], [h, 2, x]],
-               [[a, 1, x], [b, 1, x], [c, 1, x], [d, 1, x], [e, 1, x], [f, 1, x], [g, 1, x], [h, 1, x]]]).
-
+% --------------------------------------------------------
 
 % state(TurnN, Player1Info, Player2Info, Board).
 % Turn 1, P1 largest segment (0), P2 largest segment (0), initial board.
 
-
-create_board(state(1, 0, 0, Board), Height, Length):-
-    create_row(Length, Board),
-    create_column(Height, Board, Board).
-
-create_row(L, B):-
-    L > 0,
-    L1 is L - 1,
-    append([x], B, B1),
-    create_row(L1, B1).
-
-create_column(H, B, R):-
-    H > 0,
-    H1 is H - 1,
-    append(R, B, B1),
-    create_column(H1, B1, R).
+print_letters(0,_):-
+	write('\n').
+print_letters(Length, LocalMax):-
+	Length>0,
+	Code is LocalMax - Length + 1,
+	put_code(Code),
+	write('     '),
+	Length1 is Length - 1,
+	print_letters(Length1, LocalMax).
 
 
-display_game(state(_, _, _, Board)):-
-	nl,
-    print_board(Board),
-    !.
+print_board_header(0):-nl.
+print_board_header(Length):-
+	write('______'),
+	Length1 is Length - 1,
+	print_board_header(Length1).
 
+print_board([],_,Length):-
+	write(' +    '),
+	char_code('a', A),
+    LocalMax is A + Length - 1,
+	print_letters(Length, LocalMax).
+	
+print_board([Row | Tail], Height, Length):-
+    print_row_first(Row, Height, Length),
+	Height1 is Height - 1,
+    print_board(Tail,Height1,Length).
 
-print_board([]):-
-	write('+ a b c d e f g h\n').
-print_board([Row | Tail]):-
-    print_row(Row),
-    print_board(Tail).
+print_row_first(Row,Height,Length):-
+	print_top(Length),
+	write(' '),
+	write(Height),
+	write(' |  '),
+	print_row(Row),
+	write('   |'),
+	print_bottom(Length).
 
 print_row([]):-nl.
-
-print_row([[a,N,X] | Tail]):-
-	write(N),
-    write(' '),
+print_row([X | Tail]):-
     write(X),
-	write(' '),
+	write('  |  '),
     print_row(Tail).
 
-print_row([[_,_,X] | Tail]):-
-    write(X),
-	write(' '),
-    print_row(Tail).
+print_top(0):-
+	write('   |'),
+	nl.
+print_top(L):-
+	L1 is L - 1,
+	write('   |  '),
+    print_top(L1).
 
+print_bottom(0):-nl.
+print_bottom(L):-
+	L1 is L - 1,
+	write('_____|'),
+    print_bottom(L1).
+	
+create_board(state(1, 0, 0, Board), Height, Length) :-
+    create_board_aux(Board, Height, Length, []).
 
+create_board_aux(Board, 0, _, Board).
+create_board_aux(Board, Height, Length, Acc) :-
+    Height > 0,
+    Height1 is Height - 1,
+    create_row(Length, Row),
+    create_board_aux(Board, Height1, Length, [Row | Acc]).
+
+create_row(0, []).
+create_row(Length, [x | Tail]) :-
+    Length > 0,
+    Length1 is Length - 1,
+    create_row(Length1, Tail).
+
+display_game(state(_, _, _, Board),H,L):-
+	nl,
+	write('   _'),
+	print_board_header(L),
+    print_board(Board,H,L),
+    !.
+
+validate_height_length(N):-
+    N >= 5, N < 10,
+	!.
+validate_height_length(_):-
+    fail.
+
+get_height(Height) :-
+	repeat,
+    write('Enter the chosen Height(Between 5 and 9): '),
+    peek_char(Ch),
+    get_char_not_nl(Ch, Char),
+	clear_buffer,
+	convert_char_to_number(Char,Height),
+	validate_height_length(Height).
+	
+get_length(Length) :-
+	repeat,
+    write('Enter the chosen Length(Between 5 and 9): '),
+    peek_char(Ch),
+    get_char_not_nl(Ch, Char),
+	clear_buffer,
+	convert_char_to_number(Char,Length),
+	validate_height_length(Length).
+	
 start:-
-    write('board dimensions:\n'),
-    write('height:\n'),
-    read(H),
-    write('length:\n'),
-    read(L),
+    write('Please choose the board dimensions:\n'),
+	get_height(H),
+	get_length(L),
     create_board(State, H, L),
-    display_game(State),
+    display_game(State,H,L),
     blue_turn(State).
 
 
 blue_turn(state(TurnN, P1, P2, Board)):-
     Turn is TurnN + 1,
     % Get move
-    get_blue_input(N, L),
+    get_blue_input(N, L, 1),
     % Change board
 
     % reds turn
@@ -94,15 +154,22 @@ red_turn(state(TurnN, P1, P2, Board)):-
     blue_turn(state(Turn, P1, P2, Board)),
     !.
 
-get_blue_input(N, L):-
+get_blue_input(N, L, 1):-
     write('Blue\'s turn.\n'),
     repeat,
-    write('Input Number:\n'),
-    read(N),
-    write('Input Letter:\n'),
-    read(L),
+    get_human_input(L,N),
     validate_blue_move(N,L),
     !.
+	
+get_human_input(L,N):-
+	write('Please input your move in the format lN (a4 p.e.)'),
+	peek_char(Ch),
+	get_char_not_nl(Ch,L),
+	peek_char(Ch1),
+	get_char_not_nl(Ch1,ChNumber),
+	convert_char_to_number(ChNumber, N),
+	clear_buffer.
+	
 
 
 get_red_input(N, L):-
