@@ -17,6 +17,10 @@ convert_char_to_number(Ascii, Number):-
 	char_code(Ascii, Code),
 	Number is Code - 48.
 
+convert_letter_to_number(Ascii, Number):-
+	char_code(Ascii, Code),
+	Number is Code - 96.
+
 % --------------------------------------------------------
 
 % state(TurnN, Player1Info, Player2Info, Board).
@@ -126,6 +130,7 @@ get_length(Length) :-
 	convert_char_to_number(Char,Length),
 	validate_height_length(Length).
 	
+% //////////////////// START //////////////////////////
 start:-
     write('Please choose the board dimensions:\n'),
 	get_height(H),
@@ -134,11 +139,14 @@ start:-
     display_game(State,H,L),
     blue_turn(State).
 
+% ----------------
+%  Players Turn
+% ----------------
 
 blue_turn(state(TurnN, P1, P2, Board)):-
     Turn is TurnN + 1,
     % Get move
-    get_blue_input(N, L, 1),
+    get_blue_input(Board, N, L, 1),
     % Change board
 
     % reds turn
@@ -148,48 +156,54 @@ blue_turn(state(TurnN, P1, P2, Board)):-
 red_turn(state(TurnN, P1, P2, Board)):-
     Turn is TurnN + 1, 
     % Get move
-    get_red_input(N, L),
+    get_red_input(Board, N, L, 1),
     % Change board
+
     % blues turn
     blue_turn(state(Turn, P1, P2, Board)),
     !.
 
-get_blue_input(N, L, 1):-
+
+get_blue_input(Board, N, L, 1):-
     write('Blue\'s turn.\n'),
     repeat,
     get_human_input(L,N),
-    validate_blue_move(N,L),
+    validate_blue_move(Board,N,L,1),
     !.
 	
+get_red_input(Board, N, L, 1):-
+    write('Red\'s turn.\n'),
+    repeat,
+    get_human_input(L,N),
+    validate_red_move(Board,N,L),
+    !.
+
+
 get_human_input(L,N):-
 	write('Please input your move in the format lN (a4 p.e.)'),
 	peek_char(Ch),
-	get_char_not_nl(Ch,L),
+	get_char_not_nl(Ch,ChLetter),
 	peek_char(Ch1),
 	get_char_not_nl(Ch1,ChNumber),
 	convert_char_to_number(ChNumber, N),
+    convert_letter_to_number(ChLetter, L),
 	clear_buffer.
-	
 
+validate_blue_move([X|_],N,L,N):-
+    check_line(X,L,1,x).
 
-get_red_input(N, L):-
-    write('Red\'s turn.\n'),
-    repeat,
-    write('Input Number:\n'),
-    read(N),
-    write('Input Letter:\n'),
-    read(L),
-    validate_red_move(N,L),
-    !.
+validate_blue_move([_|Y],N,L,N_at):-
+    N_at1 is N_at + 1,
+    validate_blue_move(Y,N,L,N_at1).
 
-validate_blue_move(N,L):-
-    N >= 1, N =< 8, L @>= 'a', L @=< 'h'
-    -> % check move is availabel
-    write('Noice\n')
-    ; write('Wrong input, try again.\n'), fail.
+validate_blue_move([],_,_,_):-fail.
 
-validate_red_move(N,L):-
-    N >= 1, N =< 8, L @>= 'a', L @=< 'h'
-    -> % check move is availabel
-    write('Noice\n')
-    ; write('Wrong input, try again.\n'), fail.
+check_line(_, L, L, x).
+
+check_line([X|Y], L, L_at,X):-
+    L_at1 is L_at +1,
+    check_line(Y,L,L_at1,X).
+
+check_line([],_,_,_):-fail.
+
+validate_red_move(N,L).
