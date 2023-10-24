@@ -25,7 +25,7 @@ convert_letter_to_number(Ascii, Number):-
 % --------------------------------------------------------
 % ---------------------Game Display-----------------------
 % --------------------------------------------------------
-% state(TurnN, Player1Info, Player2Info, Board).
+% state(TurnN, Player1Info, Player2Info, Board, Height, Length).
 % Turn 1, P1 largest segment (0), P2 largest segment (0), initial board.
 
 print_letters(0,_):-
@@ -85,7 +85,7 @@ print_bottom(L):-
 	write('_____|'),
     print_bottom(L1).
 		
-display_game(state(_, _, _, Board),H,L):-
+display_game(state(_, _, _, Board,H,L)):-
 	nl,
 	write('   _'),
 	print_board_header(L),
@@ -95,7 +95,7 @@ display_game(state(_, _, _, Board),H,L):-
 % --------------------Board Generation--------------------
 % --------------------------------------------------------
 	
-create_board(state(1, 0, 0, Board), Height, Length) :-
+create_board(state(1, 0, 0, Board, Height, Length)) :-
     create_board_aux(Board, Height, Length, []).
 
 create_board_aux(Board, 0, _, Board).
@@ -117,7 +117,7 @@ validate_height_length(N):-
 validate_height_length(_):-
     fail.
 
-get_height(Height) :-
+get_height(state(_,_,_,_,Height,_)) :-
 	repeat,
     write('Enter the chosen Height(Between 5 and 9): '),
     peek_char(Ch),
@@ -126,7 +126,7 @@ get_height(Height) :-
 	convert_char_to_number(Char,Height),
 	validate_height_length(Height).
 	
-get_length(Length) :-
+get_length(state(_,_,_,_,_,Length)) :-
 	repeat,
     write('Enter the chosen Length(Between 5 and 9): '),
     peek_char(Ch),
@@ -140,22 +140,22 @@ get_length(Length) :-
 % //////////////////// START //////////////////////////
 start:-
     write('Please choose the board dimensions:\n'),
-	get_height(H),
-	get_length(L),
-    create_board(State, H, L),
-    display_game(State,H,L),
-    blue_turn(State,H,L).
+	get_height(State),
+	get_length(State),
+    create_board(State),
+    display_game(State),
+    blue_turn(State).
 
 % --------------------------------------------------------
 % --------------------Players Turn------------------------
 % --------------------------------------------------------
 
-blue_turn(state(TurnN, P1, P2, Board),Height,Length):-
+blue_turn(state(TurnN, P1, P2, Board, Height,Length)):-
     Turn is TurnN + 1,
     % Get move
-    get_blue_input(Board, N, L, 1),
+    get_blue_input(N, L, 1),
 	make_move(Board,N,L,blue,NewBoard),
-    display_game(state(TurnN,P1,P2,NewBoard),Height,Length),
+    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
 
     % reds turn
 	
