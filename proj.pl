@@ -1,5 +1,6 @@
 % --------------------------------------------------------
-% BUFFER READING RELATED FUNCTIONS
+% ------------BUFFER READING RELATED FUNCTIONS------------
+% --------------------------------------------------------
 
 clear_buffer:-
 	repeat,
@@ -22,7 +23,8 @@ convert_letter_to_number(Ascii, Number):-
 	Number is Code - 96.
 
 % --------------------------------------------------------
-
+% ---------------------Game Display-----------------------
+% --------------------------------------------------------
 % state(TurnN, Player1Info, Player2Info, Board).
 % Turn 1, P1 largest segment (0), P2 largest segment (0), initial board.
 
@@ -82,6 +84,16 @@ print_bottom(L):-
 	L1 is L - 1,
 	write('_____|'),
     print_bottom(L1).
+		
+display_game(state(_, _, _, Board),H,L):-
+	nl,
+	write('   _'),
+	print_board_header(L),
+    print_board(Board,H,L),
+    !.
+% --------------------------------------------------------
+% --------------------Board Generation--------------------
+% --------------------------------------------------------
 	
 create_board(state(1, 0, 0, Board), Height, Length) :-
     create_board_aux(Board, Height, Length, []).
@@ -98,14 +110,7 @@ create_row(Length, [x | Tail]) :-
     Length > 0,
     Length1 is Length - 1,
     create_row(Length1, Tail).
-
-display_game(state(_, _, _, Board),H,L):-
-	nl,
-	write('   _'),
-	print_board_header(L),
-    print_board(Board,H,L),
-    !.
-
+	
 validate_height_length(N):-
     N >= 5, N < 10,
 	!.
@@ -129,6 +134,8 @@ get_length(Length) :-
 	clear_buffer,
 	convert_char_to_number(Char,Length),
 	validate_height_length(Length).
+% --------------------------------------------------------
+
 	
 % //////////////////// START //////////////////////////
 start:-
@@ -137,50 +144,50 @@ start:-
 	get_length(L),
     create_board(State, H, L),
     display_game(State,H,L),
-    blue_turn(State).
+    blue_turn(State,H,L).
 
-% ----------------
-%  Players Turn
-% ----------------
+% --------------------------------------------------------
+% --------------------Players Turn------------------------
+% --------------------------------------------------------
 
-blue_turn(state(TurnN, P1, P2, Board)):-
+blue_turn(state(TurnN, P1, P2, Board),Height,Length):-
     Turn is TurnN + 1,
     % Get move
     get_blue_input(Board, N, L, 1),
-    % Change board
+	make_move(Board,N,L,blue,NewBoard),
+    display_game(state(TurnN,P1,P2,NewBoard),Height,Length),
 
     % reds turn
-    red_turn(state(Turn, P1, P2, Board)),
+	
+    red_turn(state(Turn, P1, P2, NewBoard),Height,Length),
     !.
 
-red_turn(state(TurnN, P1, P2, Board)):-
+red_turn(state(TurnN, P1, P2, Board),Height,Length):-
     Turn is TurnN + 1, 
     % Get move
     get_red_input(Board, N, L, 1),
     % Change board
 
     % blues turn
-    blue_turn(state(Turn, P1, P2, Board)),
+    blue_turn(state(Turn, P1, P2, Board),Height,Length),
     !.
 
-
-get_blue_input(Board, N, L, 1):-
+% Falta checar se está dentro das dimensões do board
+get_blue_input(N, L, 1):-
     write('Blue\'s turn.\n'),
     repeat,
-    get_human_input(L,N),
-    validate_blue_move(Board,N,L,1),
+    get_human_input(N,L),
     !.
 	
-get_red_input(Board, N, L, 1):-
+get_red_input(N, L, 1):-
     write('Red\'s turn.\n'),
     repeat,
-    get_human_input(L,N),
-    validate_red_move(Board,N,L),
+    get_human_input(N,L),
     !.
 
 
-get_human_input(L,N):-
-	write('Please input your move in the format lN (a4 p.e.)'),
+get_human_input(N,L):-
+	write('Please input your move in the format lN (a4 p.e.): '),
 	peek_char(Ch),
 	get_char_not_nl(Ch,ChLetter),
 	peek_char(Ch1),
@@ -189,21 +196,29 @@ get_human_input(L,N):-
     convert_letter_to_number(ChLetter, L),
 	clear_buffer.
 
-validate_blue_move([X|_],N,L,N):-
-    check_line(X,L,1,x).
+% make_move(+Board,+N,+L,+Piece,-NewBoard)
+% Receives the board, N is the Number it wants to go, L is the letter it wants to go.
+make_move(Board,N,L,blue,NewBoard):-
+	make_move_aux(Board,N,L,1,[],'b',NewBoard).
 
-validate_blue_move([_|Y],N,L,N_at):-
-    N_at1 is N_at + 1,
-    validate_blue_move(Y,N,L,N_at1).
+make_move_aux([Head|Tail],N,L,N,Saved,Piece,Acc):-
+	change_piece_in_line(Head,L,Row,Piece),
+	append([Saved|Row],Tail,Acc).
+make_move_aux([Head|Tail],N,L,CurPos,Saved,Piece,Acc):-
+	CurPos1 is CurPos + 1,
+	make_move_aux(Tail,N,L,CurPos1,[Saved|Head],Piece,Acc).
 
-validate_blue_move([],_,_,_):-fail.
 
-check_line(_, L, L, x).
 
-check_line([X|Y], L, L_at,X):-
-    L_at1 is L_at +1,
-    check_line(Y,L,L_at1,X).
 
-check_line([],_,_,_):-fail.
+	
+change_piece_in_line(Line,L,Row,Piece):-
+	change_piece_in_line_aux(Line,L,1,[],Piece,Row).
 
-validate_red_move(N,L).
+change_piece_in_line_aux([b|_],L,L,_,_,_):-fail.
+change_piece_in_line_aux([r|_],L,L,_,_,_):-fail.
+change_piece_in_line_aux([_|Tail],L,L,Saved,Piece,[Saved,Piece|Tail]).
+change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc):-
+	CurPos1 is CurPos + 1,
+	change_piece_in_line_aux(Tail,L,CurPos1,[Saved|Head],Piece,Acc).
+change_piece_in_line_aux([],_,_,_,_,_):-fail.
