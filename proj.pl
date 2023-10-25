@@ -1,3 +1,8 @@
+% --------------------------------------------------------
+% ----------------------IMPORTS---------------------------
+% --------------------------------------------------------
+
+
 :- use_module(library(lists)).
 
 % --------------------------------------------------------
@@ -68,10 +73,15 @@ print_row_first(Row,Height,Length):-
 	print_bottom(Length).
 
 print_row([]):-nl.
+print_row([x | Tail]):-
+    write(' '),
+	write('  |  '),
+    print_row(Tail).
 print_row([X | Tail]):-
     write(X),
 	write('  |  '),
     print_row(Tail).
+
 
 print_top(0):-
 	write('   |'),
@@ -136,73 +146,10 @@ get_length(state(_,_,_,_,_,Length)) :-
 	clear_buffer,
 	convert_char_to_number(Char,Length),
 	validate_height_length(Length).
-% --------------------------------------------------------
-
 	
-% //////////////////// START //////////////////////////
-start:-
-    write('Please choose the board dimensions:\n'),
-	get_height(State),
-	get_length(State),
-    create_board(State),
-    display_game(State),
-    blue_turn(State).
-
 % --------------------------------------------------------
-% --------------------Players Turn------------------------
+% ----------------------Make Move-------------------------
 % --------------------------------------------------------
-
-blue_turn(state(TurnN, P1, P2, Board, Height,Length)):-
-    Turn is TurnN + 1,
-	write('Blue\'s turn.\n'),
-    % Get move
-	repeat,
-    get_blue_input(N, L, 1),
-	% Change board
-	reverse(Board, ReversedBoard),
-	make_move(ReversedBoard,N,L,blue,ReversedNewBoard),
-	reverse(ReversedNewBoard, NewBoard),
-    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
-    % reds turn
-    red_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
-    !.
-
-red_turn(state(TurnN, P1, P2, Board,Height,Length)):-
-    Turn is TurnN + 1,
-	write('Red\'s turn.\n'),
-    % Get move
-	repeat,
-    get_red_input(N, L, 1),
-    % Change board
-	reverse(Board, ReversedBoard),
-	make_move(ReversedBoard,N,L,red,ReversedNewBoard),
-	reverse(ReversedNewBoard, NewBoard),
-    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
-    % blues turn
-    blue_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
-    !.
-
-% Falta checar se está dentro das dimensões do board
-get_blue_input(N, L, 1):-
-    repeat,
-    get_human_input(N,L),
-    !.
-	
-get_red_input(N, L, 1):-
-    repeat,
-    get_human_input(N,L),
-    !.
-
-
-get_human_input(N,L):-
-	write('Please input your move in the format lN (a4 p.e.): '),
-	peek_char(Ch),
-	get_char_not_nl(Ch,ChLetter),
-	peek_char(Ch1),
-	get_char_not_nl(Ch1,ChNumber),
-	convert_char_to_number(ChNumber, N),
-    convert_letter_to_number(ChLetter, L),
-	clear_buffer.
 
 % make_move(+Board,+N,+L,+Piece,-NewBoard)
 % Receives the board, N is the Number it wants to go, L is the letter it wants to go.
@@ -254,3 +201,91 @@ change_piece_in_line_aux([],_,_,_,_,_):-
 	write('Wrong Input\n'),
 	!,
 	fail.
+% --------------------------------------------------------
+
+	
+% //////////////////// START //////////////////////////
+start:-
+    write('Please choose the board dimensions:\n'),
+	get_height(State),
+	get_length(State),
+    create_board(State),
+    display_game(State),
+    blue_turn(State).
+
+% --------------------------------------------------------
+% --------------------Players Turn------------------------
+% --------------------------------------------------------
+
+blue_turn(state(TurnN, P1, P2, Board, Height,Length)):-
+    Turn is TurnN + 1,
+	write('Blue\'s turn.\n'),
+    % Get move
+	repeat,
+    get_blue_input(N, L, 1),
+	% Change board
+	reverse(Board, ReversedBoard),
+	make_move(ReversedBoard,N,L,blue,ReversedNewBoard),
+	reverse(ReversedNewBoard, NewBoard),
+    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+    % reds turn
+    red_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
+    !.
+
+red_turn(state(TurnN, P1, P2, Board,Height,Length)):-
+    Turn is TurnN + 1,
+	write('Red\'s turn.\n'),
+    % Get move
+	repeat,
+    get_red_input(N, L, 1),
+    % Change board
+	reverse(Board, ReversedBoard),
+	make_move(ReversedBoard,N,L,red,ReversedNewBoard),
+	reverse(ReversedNewBoard, NewBoard),
+    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+    % blues turn
+    blue_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
+    !.
+
+% --------------------------------------------------------
+% ------------------------Input---------------------------
+% --------------------------------------------------------
+
+% Falta checar se está dentro das dimensões do board
+get_blue_input(N, L, 1):-
+    repeat,
+    get_human_input(N,L),
+    !.
+	
+get_red_input(N, L, 1):-
+    repeat,
+    get_human_input(N,L),
+    !.
+
+
+get_human_input(N,L):-
+	write('Please input your move in the format lN (a4 p.e.): '),
+	peek_char(Ch),
+	get_char_not_nl(Ch,ChLetter),
+	peek_char(Ch1),
+	get_char_not_nl(Ch1,ChNumber),
+	convert_char_to_number(ChNumber, N),
+    convert_letter_to_number(ChLetter, L),
+	clear_buffer.
+
+% --------------------------------------------------------
+% ----------------------Check Win-------------------------
+% --------------------------------------------------------
+
+check_vertical_win(_, [],_).
+check_vertical_win(Letter, [Head|Tail], Height, Count, Piece) :-
+	Count < Height,
+    nth0(Letter, Head, Piece),
+	Count1 is Count + 1,
+    check_vertical_win_aux(Letter, Head, Tail).
+
+check_vertical_win_aux(_, _, []).
+check_vertical_wins_aux(Letter, Element, [Head|Tail]) :-
+	!,
+    nth0(Letter, Head, Element),
+    check_vertical_win_aux(Letter, Element, Tail).	
