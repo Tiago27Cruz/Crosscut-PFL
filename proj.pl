@@ -1,3 +1,5 @@
+:- use_module(library(lists)).
+
 % --------------------------------------------------------
 % ------------BUFFER READING RELATED FUNCTIONS------------
 % --------------------------------------------------------
@@ -152,35 +154,41 @@ start:-
 
 blue_turn(state(TurnN, P1, P2, Board, Height,Length)):-
     Turn is TurnN + 1,
+	write('Blue\'s turn.\n'),
     % Get move
+	repeat,
     get_blue_input(N, L, 1),
-	make_move(Board,N,L,blue,NewBoard),
+	% Change board
+	reverse(Board, ReversedBoard),
+	make_move(ReversedBoard,N,L,blue,ReversedNewBoard),
+	reverse(ReversedNewBoard, NewBoard),
     display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
-
     % reds turn
-	
-    red_turn(state(Turn, P1, P2, NewBoard),Height,Length),
+    red_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
     !.
 
-red_turn(state(TurnN, P1, P2, Board),Height,Length):-
-    Turn is TurnN + 1, 
+red_turn(state(TurnN, P1, P2, Board,Height,Length)):-
+    Turn is TurnN + 1,
+	write('Red\'s turn.\n'),
     % Get move
-    get_red_input(Board, N, L, 1),
+	repeat,
+    get_red_input(N, L, 1),
     % Change board
-
+	reverse(Board, ReversedBoard),
+	make_move(ReversedBoard,N,L,red,ReversedNewBoard),
+	reverse(ReversedNewBoard, NewBoard),
+    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
     % blues turn
-    blue_turn(state(Turn, P1, P2, Board),Height,Length),
+    blue_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
     !.
 
 % Falta checar se está dentro das dimensões do board
 get_blue_input(N, L, 1):-
-    write('Blue\'s turn.\n'),
     repeat,
     get_human_input(N,L),
     !.
 	
 get_red_input(N, L, 1):-
-    write('Red\'s turn.\n'),
     repeat,
     get_human_input(N,L),
     !.
@@ -199,26 +207,50 @@ get_human_input(N,L):-
 % make_move(+Board,+N,+L,+Piece,-NewBoard)
 % Receives the board, N is the Number it wants to go, L is the letter it wants to go.
 make_move(Board,N,L,blue,NewBoard):-
-	make_move_aux(Board,N,L,1,[],'b',NewBoard).
+	make_move_aux(Board,N,L,1,[],'B',NewBoard).
+
+make_move(Board,N,L,red,NewBoard):-
+	make_move_aux(Board,N,L,1,[],'R',NewBoard).
 
 make_move_aux([Head|Tail],N,L,N,Saved,Piece,Acc):-
 	change_piece_in_line(Head,L,Row,Piece),
-	append([Saved|Row],Tail,Acc).
+	append(Saved,[Row],Saved1),
+	append(Saved1,Tail,Acc).
+
 make_move_aux([Head|Tail],N,L,CurPos,Saved,Piece,Acc):-
+	N > CurPos,
 	CurPos1 is CurPos + 1,
-	make_move_aux(Tail,N,L,CurPos1,[Saved|Head],Piece,Acc).
+	append(Saved,[Head],Saved1),
+	make_move_aux(Tail,N,L,CurPos1,Saved1,Piece,Acc).
 
 
-
-
+make_move_aux([],_,_,_,_,_,_):-
+	write('Wrong Input\n'),
+	!,
+	fail.
 	
 change_piece_in_line(Line,L,Row,Piece):-
 	change_piece_in_line_aux(Line,L,1,[],Piece,Row).
 
-change_piece_in_line_aux([b|_],L,L,_,_,_):-fail.
-change_piece_in_line_aux([r|_],L,L,_,_,_):-fail.
-change_piece_in_line_aux([_|Tail],L,L,Saved,Piece,[Saved,Piece|Tail]).
+change_piece_in_line_aux(['R'|_],L,L,_,_,_):-
+	write('r is already here\n'),
+	!,
+	fail.
+change_piece_in_line_aux(['B'|_],L,L,_,_,_):-
+	write('b is already here\n'),
+	!,
+	fail.
+
+change_piece_in_line_aux([x|Tail],L,L,Saved,Piece, Acc):-
+	append(Saved, [Piece], Saved1),
+	append(Saved1, Tail, Acc).
+
 change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc):-
 	CurPos1 is CurPos + 1,
-	change_piece_in_line_aux(Tail,L,CurPos1,[Saved|Head],Piece,Acc).
-change_piece_in_line_aux([],_,_,_,_,_):-fail.
+	append(Saved, [Head], Saved1),
+	change_piece_in_line_aux(Tail,L,CurPos1,Saved1,Piece,Acc).
+
+change_piece_in_line_aux([],_,_,_,_,_):-
+	write('Wrong Input\n'),
+	!,
+	fail.
