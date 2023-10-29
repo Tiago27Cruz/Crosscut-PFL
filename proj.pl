@@ -136,7 +136,8 @@ get_height(state(_,_,_,_,Height,_)) :-
     get_char_not_nl(Ch, Char),
 	clear_buffer,
 	convert_char_to_number(Char,Height),
-	validate_height_length(Height).
+	validate_height_length(Height),
+	!.
 	
 get_length(state(_,_,_,_,_,Length)) :-
 	repeat,
@@ -145,7 +146,8 @@ get_length(state(_,_,_,_,_,Length)) :-
     get_char_not_nl(Ch, Char),
 	clear_buffer,
 	convert_char_to_number(Char,Length),
-	validate_height_length(Length).
+	validate_height_length(Length),
+	!.
 	
 % --------------------------------------------------------
 % ----------------------Make Move-------------------------
@@ -211,38 +213,45 @@ start:-
 	get_length(State),
     create_board(State),
     display_game(State),
-    blue_turn(State).
+    \+blue_turn(State),
+	write('YOU WON!!'),
+	!.
 
 % --------------------------------------------------------
 % --------------------Players Turn------------------------
 % --------------------------------------------------------
 
+move_loop(Board, NewBoard, Player, Number, Letter):-
+	repeat,
+    get_blue_input(Number, Letter, 1),
+	% Change board
+	reverse(Board, ReversedBoard),
+	make_move(ReversedBoard,Number,Letter,Player,ReversedNewBoard),
+	reverse(ReversedNewBoard, NewBoard),
+	!.
+
 blue_turn(state(TurnN, P1, P2, Board, Height,Length)):-
     Turn is TurnN + 1,
 	write('Blue\'s turn.\n'),
-    % Get move
-	repeat,
-    get_blue_input(N, L, 1),
-	% Change board
-	reverse(Board, ReversedBoard),
-	make_move(ReversedBoard,N,L,blue,ReversedNewBoard),
-	reverse(ReversedNewBoard, NewBoard),
-    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+    % move
+	move_loop(Board, NewBoard, blue, Number, Letter),
+	display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+	% check win
+	check_vertical_win(NewBoard, Letter, Height),
+	check_horizontal_win(NewBoard, Number, Length),
     % reds turn
-    red_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
+    red_turn(state(Turn, P1, P2, NewBoard, Height, Length)),
     !.
 
 red_turn(state(TurnN, P1, P2, Board,Height,Length)):-
     Turn is TurnN + 1,
 	write('Red\'s turn.\n'),
     % Get move
-	repeat,
-    get_red_input(N, L, 1),
-    % Change board
-	reverse(Board, ReversedBoard),
-	make_move(ReversedBoard,N,L,red,ReversedNewBoard),
-	reverse(ReversedNewBoard, NewBoard),
+	move_loop(Board, NewBoard, red, Number, Letter),
     display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+	% check win
+	check_vertical_win(NewBoard, Letter, Height),
+	check_horizontal_win(NewBoard, Number, Length),
     % blues turn
     blue_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
     !.
@@ -251,7 +260,6 @@ red_turn(state(TurnN, P1, P2, Board,Height,Length)):-
 % ------------------------Input---------------------------
 % --------------------------------------------------------
 
-% Falta checar se está dentro das dimensões do board
 get_blue_input(N, L, 1):-
     repeat,
     get_human_input(N,L),
@@ -274,18 +282,60 @@ get_human_input(N,L):-
 	clear_buffer.
 
 % --------------------------------------------------------
-% ----------------------Check Win-------------------------
+% ------------------Check Vertical Win--------------------
 % --------------------------------------------------------
 
-check_vertical_win(_, [],_).
-check_vertical_win(Letter, [Head|Tail], Height, Count, Piece) :-
-	Count < Height,
-    nth0(Letter, Head, Piece),
-	Count1 is Count + 1,
-    check_vertical_win_aux(Letter, Head, Tail).
+check_vertical_win([Head|Tail], Letter,Height):-
+	nth1(Letter, Head, N),
+	check_vertical_win_aux(Tail, Letter, N, N, 0, Height).
 
-check_vertical_win_aux(_, _, []).
-check_vertical_wins_aux(Letter, Element, [Head|Tail]) :-
+check_vertical_win_aux([], _, N, N, Counter, Height):-
+	N \= x,
+	Counter1 is Counter + 1,
+	Counter1 >= Height-2,
 	!,
-    nth0(Letter, Head, Element),
-    check_vertical_win_aux(Letter, Element, Tail).	
+	fail.
+
+check_vertical_win_aux([], _, _, _, _, _).
+
+check_vertical_win_aux([Head|Tail], Letter, x, x, _, Height):-
+	nth1(Letter, Head, N),
+	check_vertical_win_aux(Tail, Letter, x, N, 1, Height).
+
+check_vertical_win_aux([Head|Tail], Letter, N, N, Counter, Height):-
+	N \= x,
+	Counter1 is Counter + 1,
+	Counter1 < Height-2,
+	nth1(Letter, Head, N1),
+	check_vertical_win_aux(Tail, Letter, N, N1, Counter1, Height).
+
+check_vertical_win_aux([Head|Tail], Letter, N, N1, _, Height):-
+	N \= N1,
+	nth1(Letter, Head, N2),
+	check_vertical_win_aux(Tail, Letter, N1, N2, 1, Height).
+
+
+% --------------------------------------------------------
+% -----------------Check Horizontal Win-------------------
+% --------------------------------------------------------
+
+check_horizontal_win(Board, Number, Length):-
+	Pos is Length-Number,
+	nth0(Pos, Board, Row),
+	nth1(1, Row, N),
+	check_horizontal_win_aux(Row, N, 0, Length).
+
+check_horizontal_win_aux([], _,_,_).
+
+check_horizontal_win_aux([x|Tail], x, _, Length):-
+	check_horizontal_win_aux(Tail, x, 0, Length).
+
+check_horizontal_win_aux([Head|Tail], Head, Counter, Length):-
+	Head \= x,
+	Counter1 is Counter + 1,
+	Counter1 < Length-2,
+	check_horizontal_win_aux(Tail, Head, Counter1, Length).
+
+check_horizontal_win_aux([Head|Tail], N, _, Length):-
+	N \= Head,
+	check_horizontal_win_aux(Tail, Head, 1, Length).
