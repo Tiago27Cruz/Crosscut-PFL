@@ -2,7 +2,6 @@
 % ----------------------IMPORTS---------------------------
 % --------------------------------------------------------
 
-
 :- use_module(library(lists)).
 
 % --------------------------------------------------------
@@ -15,9 +14,10 @@ clear_buffer:-
 	C='\n',
 	!.
 	
-get_char_not_nl('\n',Next):-
+get_char_not_nl('\n',_):-
 	get_char(_),
-	get_char_not_nl(Next).
+	!,
+	fail.
 get_char_not_nl(Char,Char):-
 	get_char(_).
 
@@ -28,12 +28,43 @@ convert_char_to_number(Ascii, Number):-
 convert_letter_to_number(Ascii, Number):-
 	char_code(Ascii, Code),
 	Number is Code - 96.
+	
+% --------------------------------------------------------
+% ----------------------Math Functions--------------------
+% --------------------------------------------------------
+
+is_even(N):-
+    0 is mod(N,2).
+
+is_odd(N):-
+    1 is mod(N,2).
+	
+% --------------------------------------------------------
+% -----------------------Game State----------------------
+% --------------------------------------------------------	
+% state(TurnN, Player1Info, Player2Info, Board, Height, Length).
+
+:- dynamic game_state/1.
+
+initialize_game_state(State):-
+	write('Please choose the board dimensions:\n'),
+	get_height(State),
+	get_length(State),
+    create_board(State),
+    retractall(game_state(_)),
+    asserta(game_state(State)).
+
+get_game_state(State):-
+    game_state(State).
+	
+update_game_state(State):-
+	write('updated game state\n'),
+    retract(game_state(_)),
+    asserta(game_state(State)).
 
 % --------------------------------------------------------
 % ---------------------Game Display-----------------------
 % --------------------------------------------------------
-% state(TurnN, Player1Info, Player2Info, Board, Height, Length).
-% Turn 1, P1 largest segment (0), P2 largest segment (0), initial board.
 
 print_letters(0,_):-
 	write('\n').
@@ -107,7 +138,7 @@ display_game(state(_, _, _, Board,H,L)):-
 % --------------------Board Generation--------------------
 % --------------------------------------------------------
 	
-create_board(state(1, 0, 0, Board, Height, Length)) :-
+create_board(state(0, 0, 0, Board, Height, Length)) :-
     create_board_aux(Board, Height, Length, []).
 
 create_board_aux(Board, 0, _, Board).
@@ -153,123 +184,146 @@ get_length(state(_,_,_,_,_,Length)) :-
 % ----------------------Make Move-------------------------
 % --------------------------------------------------------
 
-% make_move(+Board,+N,+L,+Piece,-NewBoard)
+move_loop(Board, NewBoard, Player, Number, Letter, Height, Length):-
+	repeat,
+    get_input(Number, Letter, 1),
+	validate_move(Letter, Length, Number, Height),
+	reverse(Board, ReversedBoard),
+	make_move(ReversedBoard,Number,Letter,Player,ReversedNewBoard,0),
+	reverse(ReversedNewBoard, NormalBoard),
+	try_to_flip(Letter, Number, NormalBoard, Player, NewBoard),
+	!.
+
+% make_move(+Board,+N,+L,+Piece,-NewBoard, +Bypass)
 % Receives the board, N is the Number it wants to go, L is the letter it wants to go.
-make_move(Board,N,L,blue,NewBoard):-
-	make_move_aux(Board,N,L,1,[],'B',NewBoard).
+make_move(Board,N,L,'B',NewBoard,Bypass):-
+	make_move_aux(Board,N,L,1,[],'B',NewBoard,Bypass).
 
-make_move(Board,N,L,red,NewBoard):-
-	make_move_aux(Board,N,L,1,[],'R',NewBoard).
+make_move(Board,N,L,'R',NewBoard,Bypass):-
+	make_move_aux(Board,N,L,1,[],'R',NewBoard,Bypass).
 
-make_move_aux([Head|Tail],N,L,N,Saved,Piece,Acc):-
-	change_piece_in_line(Head,L,Row,Piece),
+make_move_aux([Head|Tail],N,L,N,Saved,Piece,Acc,Bypass):-
+	change_piece_in_line(Head,L,Row,Piece,Bypass),
 	append(Saved,[Row],Saved1),
 	append(Saved1,Tail,Acc).
 
-make_move_aux([Head|Tail],N,L,CurPos,Saved,Piece,Acc):-
+make_move_aux([Head|Tail],N,L,CurPos,Saved,Piece,Acc,Bypass):-
 	N > CurPos,
 	CurPos1 is CurPos + 1,
 	append(Saved,[Head],Saved1),
-	make_move_aux(Tail,N,L,CurPos1,Saved1,Piece,Acc).
+	make_move_aux(Tail,N,L,CurPos1,Saved1,Piece,Acc,Bypass).
 
 
-make_move_aux([],_,_,_,_,_,_):-
-	write('Wrong Input\n'),
+make_move_aux([],_,_,_,_,_,_,_):-
+	write('Invalid Input\n'),
 	!,
 	fail.
 	
-change_piece_in_line(Line,L,Row,Piece):-
-	change_piece_in_line_aux(Line,L,1,[],Piece,Row).
+change_piece_in_line(Line,L,Row,Piece,Bypass):-
+	change_piece_in_line_aux(Line,L,1,[],Piece,Row,Bypass).
 
-change_piece_in_line_aux(['R'|_],L,L,_,_,_):-
-	write('r is already here\n'),
+change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
+	write('A Red piece is already here!\n'),
 	!,
 	fail.
-change_piece_in_line_aux(['B'|_],L,L,_,_,_):-
-	write('b is already here\n'),
+change_piece_in_line_aux(['B'|_],L,L,_,_,_,0):-
+	write('A Blue piece is already here!\n'),
 	!,
 	fail.
 
-change_piece_in_line_aux([x|Tail],L,L,Saved,Piece, Acc):-
+change_piece_in_line_aux([_|Tail],L,L,Saved,Piece, Acc,_):-
 	append(Saved, [Piece], Saved1),
 	append(Saved1, Tail, Acc).
 
-change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc):-
+change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc,Bypass):-
 	CurPos1 is CurPos + 1,
 	append(Saved, [Head], Saved1),
-	change_piece_in_line_aux(Tail,L,CurPos1,Saved1,Piece,Acc).
+	change_piece_in_line_aux(Tail,L,CurPos1,Saved1,Piece,Acc,Bypass).
 
-change_piece_in_line_aux([],_,_,_,_,_):-
+change_piece_in_line_aux([],_,_,_,_,_,_):-
 	write('Wrong Input\n'),
 	!,
 	fail.
-% --------------------------------------------------------
 
+validate_move(1,_,_,_):-
+	write('Still needs to check if it\'s a flip // Letter = a \n'),
+	!,
+	fail.
+validate_move(_,_,1,_):-
+	write('Still needs to check if it\'s a flip // number = 1\n'),
+	!,
+	fail.
+validate_move(Letter,Letter,_,_):-
+	write('Still needs to check if it\'s a flip // Letter = MAX\n'),
+	!,
+	fail.
+validate_move(_,_,Number,Number):-
+	write('Still needs to check if it\'s a flip // NUMBER = MAX\n'),
+	!,
+	fail.
+validate_move(Letter, Length, Number, Height):-
+	write('Needs to check if its a flip and that the size of the friendly flip result isnt higher than the enemy\n').
 	
-% //////////////////// START //////////////////////////
-start:-
-    write('Please choose the board dimensions:\n'),
-	get_height(State),
-	get_length(State),
-    create_board(State),
+
+% --------------------------------------------------------
+	
+% //////////////////// PLAY //////////////////////////
+play:-
+    initialize_game_state(State),
     display_game(State),
-    \+blue_turn(State),
-	write('YOU WON!!'),
+    \+blue_turn,
+	finish,
 	!.
 
+finish:-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_odd(Turn),
+	!,
+	write('BLUE WON!!').
+finish:-
+	write('RED WON!!').
+	
 % --------------------------------------------------------
 % --------------------Players Turn------------------------
 % --------------------------------------------------------
 
-move_loop(Board, NewBoard, Player, Number, Letter):-
-	repeat,
-    get_blue_input(Number, Letter, 1),
-	% Change board
-	reverse(Board, ReversedBoard),
-	make_move(ReversedBoard,Number,Letter,Player,ReversedNewBoard),
-	reverse(ReversedNewBoard, NewBoard),
-	!.
-
-blue_turn(state(TurnN, P1, P2, Board, Height,Length)):-
+blue_turn:-
+	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
     Turn is TurnN + 1,
 	write('Blue\'s turn.\n'),
     % move
-	move_loop(Board, NewBoard, blue, Number, Letter),
-	display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+	move_loop(Board, NewBoard, 'B', Number, Letter, Height, Length),
+	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
+	display_game(state(Turn,P1,P2,NewBoard,Height,Length)),
 	% check win
-	check_vertical_win(NewBoard, Letter, Height),
-	check_horizontal_win(NewBoard, Number, Length),
+	check_win(NewBoard, Letter, Height, Number, Length),
     % reds turn
-    red_turn(state(Turn, P1, P2, NewBoard, Height, Length)),
+    red_turn,
     !.
 
-red_turn(state(TurnN, P1, P2, Board,Height,Length)):-
+red_turn:-
+	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
     Turn is TurnN + 1,
-	write('Red\'s turn.\n'),
+	write('Red\'s turn. '),
+	nl,
     % Get move
-	move_loop(Board, NewBoard, red, Number, Letter),
-    display_game(state(TurnN,P1,P2,NewBoard,Height,Length)),
+	move_loop(Board, NewBoard, 'R', Number, Letter, Height, Length),
+	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
+    display_game(state(Turn,P1,P2,NewBoard,Height,Length)),
 	% check win
-	check_vertical_win(NewBoard, Letter, Height),
-	check_horizontal_win(NewBoard, Number, Length),
+	check_win(NewBoard, Letter, Height, Number, Length),
     % blues turn
-    blue_turn(state(Turn, P1, P2, NewBoard,Height,Length)),
+    blue_turn,
     !.
 
 % --------------------------------------------------------
 % ------------------------Input---------------------------
 % --------------------------------------------------------
 
-get_blue_input(N, L, 1):-
+get_input(N, L, 1):-
     repeat,
     get_human_input(N,L),
     !.
-	
-get_red_input(N, L, 1):-
-    repeat,
-    get_human_input(N,L),
-    !.
-
 
 get_human_input(N,L):-
 	write('Please input your move in the format lN (a4 p.e.): '),
@@ -280,6 +334,14 @@ get_human_input(N,L):-
 	convert_char_to_number(ChNumber, N),
     convert_letter_to_number(ChLetter, L),
 	clear_buffer.
+
+% --------------------------------------------------------
+% ----------------------Check Win-------------------------
+% --------------------------------------------------------
+
+check_win(Board, Letter, Height, Number, Length):-
+	check_vertical_win(Board, Letter, Height),
+	check_horizontal_win(Board, Number, Length).
 
 % --------------------------------------------------------
 % ------------------Check Vertical Win--------------------
@@ -339,3 +401,80 @@ check_horizontal_win_aux([Head|Tail], Head, Counter, Length):-
 check_horizontal_win_aux([Head|Tail], N, _, Length):-
 	N \= Head,
 	check_horizontal_win_aux(Tail, Head, 1, Length).
+
+% --------------------------------------------------------
+% --------------------Game Mechanics----------------------
+% --------------------------------------------------------
+
+try_to_flip(Letter, Number, Board, Piece, NewBoard):-
+	check_if_can_flip_vertical(Board, Letter, Piece, List),
+	write('List: '),
+	write(List),
+	nl,
+	flip_pieces(Letter, Number, 'Vertical', Board, Piece, NewBoard, List).
+try_to_flip(_, _, Board, _, Board).
+
+% check_if_can_flip_vertical(+Board, +Letter, +Piece, -List)	
+check_if_can_flip_vertical([Head|Tail], Letter, Piece, List):-
+	nth1(Letter, Head, N),
+	check_if_can_flip_vertical_aux(Tail, Letter, x, N, [], List, Piece, 1).
+
+% caso base para falhar
+check_if_can_flip_vertical_aux([], _, _, _, _, _,_):-
+	!,
+	fail.
+% Se recebeu um piece pela primeira vez
+check_if_can_flip_vertical_aux([Head|Tail], Letter, _, Piece, [], Acc, Piece, Idx):-
+	!,
+	Idx1 is Idx + 1,
+	nth1(Letter, Head, N),
+	check_if_can_flip_vertical_aux(Tail, Letter, Piece, N, [], Acc, Piece, Idx1).
+% Se recebeu um piece pela segunda vez
+check_if_can_flip_vertical_aux(_, _, _, Piece, List, List, Piece, _):-
+	!.
+
+% Se recebe um x então recomeça a contar
+check_if_can_flip_vertical_aux([Head|Tail], Letter, _, x, _, Acc, Piece, Idx):-
+	nth1(Letter, Head, N1),
+	Idx1 is Idx + 1,
+	check_if_can_flip_vertical_aux(Tail, Letter, x, N1, [], Acc, Piece, Idx1).
+
+% Se recebe um N=N onde é diferente de x
+check_if_can_flip_vertical_aux([Head|Tail], Letter, N, N, List, Acc, Piece, Idx):-
+	N \= Piece,
+	N \= x,
+	Idx1 is Idx + 1,
+	nth1(Letter, Head, N1),
+	append(List, [Idx], List1),
+	check_if_can_flip_vertical_aux(Tail, Letter, N, N1, List1, Acc, Piece, Idx1).
+
+% Se tem um Piece e depois um R/B
+check_if_can_flip_vertical_aux([Head|Tail], Letter, Piece, N, _, Acc, Piece, Idx):-
+	N \= Piece,
+	N \= x,
+	Idx1 is Idx + 1,
+	nth1(Letter, Head, N1),
+	check_if_can_flip_vertical_aux(Tail, Letter, N, N1, [Idx], Acc, Piece, Idx1).
+
+
+% flip_pieces(+Letter, +Number, +Direction, +Board, +Piece, -NewBoard, +List)
+flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List):-
+	reverse(Board, ReversedBoard),
+	flip_pieces_aux(Letter, 'Vertical', ReversedBoard, Piece, ReversedNewBoard, List),
+	reverse(ReversedNewBoard, NewBoard).
+flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List):-
+	reverse(Board, ReversedBoard),
+	flip_pieces_aux(Number, 'Horizontal', ReversedBoard, Piece, ReversedNewBoard, List),
+	reverse(ReversedNewBoard, NewBoard).
+
+flip_pieces_aux(_, _, Board, _, Board, []):-!.
+flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, [Head|Tail]):-
+	write('Head: '),
+	write(Head),
+	nl,
+	make_move(Board,Head,Letter,Piece,ChangedBoard,1),
+	flip_pieces_aux(Letter, 'Vertical', ChangedBoard, Piece, NewBoard, Tail).
+flip_pieces_aux(Number, 'Horizontal', Board, Piece, NewBoard, [Head|Tail]):-
+	make_move(Board,Number,Head,Piece,ChangedBoard,1),
+	flip_pieces_aux(Number, 'Horizontal', ChangedBoard, Piece, NewBoard, Tail).	
+	
