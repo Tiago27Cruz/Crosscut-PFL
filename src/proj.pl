@@ -3,6 +3,7 @@
 % --------------------------------------------------------
 
 :- use_module(library(lists)).
+:- use_module(library(random)).
 
 % --------------------------------------------------------
 % ------------BUFFER READING RELATED FUNCTIONS------------
@@ -34,10 +35,10 @@ convert_letter_to_number(Ascii, Number):-
 % --------------------------------------------------------
 
 is_even(N):-
-    0 is mod(N,2).
+    0 =:= mod(N,2).
 
 is_odd(N):-
-    1 is mod(N,2).
+    1 =:= mod(N,2).
 	
 % --------------------------------------------------------
 % -----------------------Game State----------------------
@@ -45,8 +46,16 @@ is_odd(N):-
 % state(TurnN, Player1Info, Player2Info, Board, Height, Length).
 
 :- dynamic game_state/1.
+:- dynamic player_info/2.
 
-initialize_game_state(State):-
+initialize_game_state:-
+	write('----------------Welcome to Crosscut!----------------\n'),
+	write('Please choose who is playing:\n'),
+	write('Options:\n'),
+	write('1 - Human [write 1]\n'),
+	write('2 - Easy Computer [write 2]\n'),
+	write('3 - Hard Computer [write 3]\n'),
+	get_player_info,
 	write('Please choose the board dimensions:\n'),
 	get_height(State),
 	get_length(State),
@@ -58,9 +67,32 @@ get_game_state(State):-
     game_state(State).
 	
 update_game_state(State):-
-	write('updated game state\n'),
     retract(game_state(_)),
     asserta(game_state(State)).
+
+get_player_info:-
+	repeat,
+	write('Player 1 is: '),
+	peek_char(Ch),
+	get_char_not_nl(Ch, Char),
+	clear_buffer,
+	convert_char_to_number(Char, Blue),
+	Blue > 0,
+	Blue < 4,
+	!,
+	repeat,
+	write('Player 2 is: '),
+	peek_char(Ch1),
+	get_char_not_nl(Ch1, Char1),
+	clear_buffer,
+	convert_char_to_number(Char1, Red),
+	Red > 0,
+	Red < 4,
+	asserta(player_info(Blue, Red)),
+	!.
+
+get_player_info(Blue, Red):-
+	player_info(Blue, Red).
 
 % --------------------------------------------------------
 % ---------------------Game Display-----------------------
@@ -128,7 +160,8 @@ print_bottom(L):-
 	write('_____|'),
     print_bottom(L1).
 		
-display_game(state(_, _, _, Board,H,L)):-
+display_game:-
+	get_game_state(state(_, _, _, Board,H,L)),
 	nl,
 	write('   _'),
 	print_board_header(L),
@@ -186,12 +219,11 @@ get_length(state(_,_,_,_,_,Length)) :-
 
 move_loop(Board, NewBoard, Player, Number, Letter, Height, Length):-
 	repeat,
-    get_input(Number, Letter, 1),
-	validate_move(Letter, Length, Number, Height),
+    get_input(Number, Letter, Player),
 	reverse(Board, ReversedBoard),
 	make_move(ReversedBoard,Number,Letter,Player,ReversedNewBoard,0),
 	reverse(ReversedNewBoard, NormalBoard),
-	try_to_flip(Letter, Number, NormalBoard, Player, NewBoard),
+	validate_move(Letter, Length, Number, Height, NormalBoard, NewBoard, Player),
 	!.
 
 % make_move(+Board,+N,+L,+Piece,-NewBoard, +Bypass)
@@ -245,47 +277,92 @@ change_piece_in_line_aux([],_,_,_,_,_,_):-
 	!,
 	fail.
 
-validate_move(1,_,_,_):-
+% --------------------------------------------------------
+% ----------------------Valid Moves-----------------------
+% --------------------------------------------------------
+
+valid_moves(Player, ListOfMoves):-
+	get_game_state(state(_,_,_,Board,Height,Length)),
+	valid_moves_aux(Board, Height, Length, Player, 1, 1, [], ListOfMoves).
+valid_moves_aux(Board, Height, Length, Player, N, L, Acc, ListOfMoves):-
+	N >= Height,
+	L >= Length,
+	validate_move(L, Length, N, Height, Board, _),
+	nth1(L, Head, Piece),
+	Piece \= Player,
+	append(Acc, [N, L], Acc1),
+	L1 is L + 1,
+	valid_moves_aux(Board, Height, Length, Player, N, L1, Acc1, ListOfMoves),
+	!.
+valid_moves_aux(_, _, _, _, _, _, List, List):-!.
+
+validate_move(1,_,_,_,_):-
 	write('Still needs to check if it\'s a flip // Letter = a \n'),
 	!,
 	fail.
-validate_move(_,_,1,_):-
-	write('Still needs to check if it\'s a flip // number = 1\n'),
+validate_move(Letter,_,1,_,Board, NewBoard, Player):-
+	try_to_flip(Letter, 1, Board, Player, NewBoard),
+	NewBoard \= Board,
+	!.
+validate_move(_,_,1,_,Board, Board,_):-
 	!,
 	fail.
-validate_move(Letter,Letter,_,_):-
+validate_move(Letter,Letter,_,_,Board, Board, _):-
 	write('Still needs to check if it\'s a flip // Letter = MAX\n'),
 	!,
 	fail.
-validate_move(_,_,Number,Number):-
-	write('Still needs to check if it\'s a flip // NUMBER = MAX\n'),
+validate_move(Letter,_,Number,Number, Board, NewBoard, Player):-
+	try_to_flip(Letter, Number, Board, Player, NewBoard),
+	write('Max\n'),
+	NewBoard \= Board,
+	!.
+validate_move(_,_,Number,Number, Board, Board, _):-
 	!,
 	fail.
-validate_move(Letter, Length, Number, Height):-
-	write('Needs to check if its a flip and that the size of the friendly flip result isnt higher than the enemy\n').
-	
+validate_move(Letter, Length, Number, Height, Board, NewBoard, Player):-
+	Number > 1,
+	Number < Height,
+	Letter > 1,
+	Letter < Length,
+	try_to_flip(Letter, Number, Board, Player, NewBoard),
+	!.
+validate_move(Letter, Length, Number, Height, Board, Board, Player):-
+	Number > 1,
+	Number < Height,
+	Letter > 1,
+	Letter < Length,
+	!.
 
 % --------------------------------------------------------
 	
 % //////////////////// PLAY //////////////////////////
 play:-
-    initialize_game_state(State),
-    display_game(State),
-    \+blue_turn,
-	finish,
+    initialize_game_state,
+    display_game,
+    \+game_loop,
+	game_over,
 	!.
 
-finish:-
+game_over:-
 	get_game_state(state(Turn,_,_,_,_,_)),
 	is_odd(Turn),
 	!,
 	write('BLUE WON!!').
-finish:-
+game_over:-
 	write('RED WON!!').
 	
 % --------------------------------------------------------
 % --------------------Players Turn------------------------
 % --------------------------------------------------------
+
+game_loop:-
+	blue_turn,
+	red_turn,
+	game_loop,
+	!.
+game_loop:-
+	!,
+	fail.
 
 blue_turn:-
 	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
@@ -294,36 +371,48 @@ blue_turn:-
     % move
 	move_loop(Board, NewBoard, 'B', Number, Letter, Height, Length),
 	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
-	display_game(state(Turn,P1,P2,NewBoard,Height,Length)),
+	display_game,
 	% check win
 	check_win(NewBoard, Letter, Height, Number, Length),
-    % reds turn
-    red_turn,
     !.
 
 red_turn:-
 	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
     Turn is TurnN + 1,
-	write('Red\'s turn. '),
-	nl,
+	write('Red\'s turn.\n'),
     % Get move
 	move_loop(Board, NewBoard, 'R', Number, Letter, Height, Length),
 	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
-    display_game(state(Turn,P1,P2,NewBoard,Height,Length)),
+    display_game,
 	% check win
 	check_win(NewBoard, Letter, Height, Number, Length),
-    % blues turn
-    blue_turn,
     !.
 
 % --------------------------------------------------------
 % ------------------------Input---------------------------
 % --------------------------------------------------------
 
-get_input(N, L, 1):-
-    repeat,
-    get_human_input(N,L),
+get_input(N, L, 'B'):-
+	get_player_info(Blue, _),
+	get_player_input(N, L, Blue),
+	!.
+get_input(N, L, 'R'):-
+    get_player_info(_, Red),
+	get_player_input(N, L, Red),
     !.
+
+get_player_input(N, L, 1):-
+	repeat,
+	get_human_input(N,L),
+	!.
+get_player_input(N, L, 2):-
+	repeat,
+	get_easy_bot_input(N,L),
+	!.
+get_player_input(N, L, 3):-
+	repeat,
+	get_hard_bot_input(N,L),
+	!.
 
 get_human_input(N,L):-
 	write('Please input your move in the format lN (a4 p.e.): '),
@@ -334,6 +423,20 @@ get_human_input(N,L):-
 	convert_char_to_number(ChNumber, N),
     convert_letter_to_number(ChLetter, L),
 	clear_buffer.
+
+get_easy_bot_input(N,L):-
+	% Acho que isto poderia usar o predicado que somos obrigados a implementar chamado valid_moves(+Player, -ListOfMoves). e depois escolher um random da lista.
+	get_game_state(state(_,_,_,_,Height,Length)),
+	MaxN is Height + 1,
+	MaxL is Length + 1,
+	random(1, MaxN, N),
+	random(1, MaxL, L).
+
+get_hard_bot_input:-
+	write('Not implemented yet!'),
+	!,
+	fail.
+
 
 % --------------------------------------------------------
 % ----------------------Check Win-------------------------
@@ -411,7 +514,7 @@ try_to_flip(Letter, Number, Board, Piece, NewBoard):-
 	write('List: '),
 	write(List),
 	nl,
-	flip_pieces(Letter, Number, 'Vertical', Board, Piece, NewBoard, List).
+	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List).
 try_to_flip(_, _, Board, _, Board).
 
 % check_if_can_flip_vertical(+Board, +Letter, +Piece, -List)	
