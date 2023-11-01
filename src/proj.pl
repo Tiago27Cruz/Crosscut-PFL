@@ -4,6 +4,7 @@
 
 :- use_module(library(lists)).
 :- use_module(library(random)).
+:- consult('board.pl').
 
 % --------------------------------------------------------
 % ------------BUFFER READING RELATED FUNCTIONS------------
@@ -93,125 +94,6 @@ get_player_info:-
 
 get_player_info(Blue, Red):-
 	player_info(Blue, Red).
-
-% --------------------------------------------------------
-% ---------------------Game Display-----------------------
-% --------------------------------------------------------
-
-print_letters(0,_):-
-	write('\n').
-print_letters(Length, LocalMax):-
-	Length>0,
-	Code is LocalMax - Length + 1,
-	put_code(Code),
-	write('     '),
-	Length1 is Length - 1,
-	print_letters(Length1, LocalMax).
-
-
-print_board_header(0):-nl.
-print_board_header(Length):-
-	write('______'),
-	Length1 is Length - 1,
-	print_board_header(Length1).
-
-print_board([],_,Length):-
-	write(' +    '),
-	char_code('a', A),
-    LocalMax is A + Length - 1,
-	print_letters(Length, LocalMax).
-	
-print_board([Row | Tail], Height, Length):-
-    print_row_first(Row, Height, Length),
-	Height1 is Height - 1,
-    print_board(Tail,Height1,Length).
-
-print_row_first(Row,Height,Length):-
-	print_top(Length),
-	write(' '),
-	write(Height),
-	write(' |  '),
-	print_row(Row),
-	write('   |'),
-	print_bottom(Length).
-
-print_row([]):-nl.
-print_row([x | Tail]):-
-    write(' '),
-	write('  |  '),
-    print_row(Tail).
-print_row([X | Tail]):-
-    write(X),
-	write('  |  '),
-    print_row(Tail).
-
-
-print_top(0):-
-	write('   |'),
-	nl.
-print_top(L):-
-	L1 is L - 1,
-	write('   |  '),
-    print_top(L1).
-
-print_bottom(0):-nl.
-print_bottom(L):-
-	L1 is L - 1,
-	write('_____|'),
-    print_bottom(L1).
-		
-display_game:-
-	get_game_state(state(_, _, _, Board,H,L)),
-	nl,
-	write('   _'),
-	print_board_header(L),
-    print_board(Board,H,L),
-    !.
-% --------------------------------------------------------
-% --------------------Board Generation--------------------
-% --------------------------------------------------------
-	
-create_board(state(0, 0, 0, Board, Height, Length)) :-
-    create_board_aux(Board, Height, Length, []).
-
-create_board_aux(Board, 0, _, Board).
-create_board_aux(Board, Height, Length, Acc) :-
-    Height > 0,
-    Height1 is Height - 1,
-    create_row(Length, Row),
-    create_board_aux(Board, Height1, Length, [Row | Acc]).
-
-create_row(0, []).
-create_row(Length, [x | Tail]) :-
-    Length > 0,
-    Length1 is Length - 1,
-    create_row(Length1, Tail).
-	
-validate_height_length(N):-
-    N >= 5, N < 10,
-	!.
-validate_height_length(_):-
-    fail.
-
-get_height(state(_,_,_,_,Height,_)) :-
-	repeat,
-    write('Enter the chosen Height(Between 5 and 9): '),
-    peek_char(Ch),
-    get_char_not_nl(Ch, Char),
-	clear_buffer,
-	convert_char_to_number(Char,Height),
-	validate_height_length(Height),
-	!.
-	
-get_length(state(_,_,_,_,_,Length)) :-
-	repeat,
-    write('Enter the chosen Length(Between 5 and 9): '),
-    peek_char(Ch),
-    get_char_not_nl(Ch, Char),
-	clear_buffer,
-	convert_char_to_number(Char,Length),
-	validate_height_length(Length),
-	!.
 	
 % --------------------------------------------------------
 % ----------------------Make Move-------------------------
@@ -233,6 +115,9 @@ make_move(Board,N,L,'B',NewBoard,Bypass):-
 
 make_move(Board,N,L,'R',NewBoard,Bypass):-
 	make_move_aux(Board,N,L,1,[],'R',NewBoard,Bypass).
+
+make_move(Board,N,L,x,NewBoard,Bypass):-
+	make_move_aux(Board,N,L,1,[],x,NewBoard,Bypass).	
 
 make_move_aux([Head|Tail],N,L,N,Saved,Piece,Acc,Bypass):-
 	change_piece_in_line(Head,L,Row,Piece,Bypass),
@@ -281,40 +166,84 @@ change_piece_in_line_aux([],_,_,_,_,_,_):-
 % ----------------------Valid Moves-----------------------
 % --------------------------------------------------------
 
+% valid_moves(+Player, -ListOfMoves)
 valid_moves(Player, ListOfMoves):-
 	get_game_state(state(_,_,_,Board,Height,Length)),
-	valid_moves_aux(Board, Height, Length, Player, 1, 1, [], ListOfMoves).
-valid_moves_aux(Board, Height, Length, Player, N, L, Acc, ListOfMoves):-
-	N >= Height,
-	L >= Length,
-	validate_move(L, Length, N, Height, Board, _),
-	nth1(L, Head, Piece),
-	Piece \= Player,
-	append(Acc, [N, L], Acc1),
-	L1 is L + 1,
-	valid_moves_aux(Board, Height, Length, Player, N, L1, Acc1, ListOfMoves),
+	valid_moves_column(Board, Height, Length, Player, 1, [], ListOfMoves),
 	!.
-valid_moves_aux(_, _, _, _, _, _, List, List):-!.
 
-validate_move(1,_,_,_,_):-
-	write('Still needs to check if it\'s a flip // Letter = a \n'),
+valid_moves_column(Board, Height, Length, Player, Number, List, ListOfMoves):-
+	Number =< Height,
+	Number >= 1,
+	!,
+	valid_moves_row(Board, Length, 1, Number, Height, Player, [], List1),
+	Number1 is Number + 1,
+	append(List1, List, List2),
+	valid_moves_column(Board, Height, Length, Player, Number1, List2, ListOfMoves),
+	!.
+valid_moves_column(_,_,_,_,_,List,List):-
+	write('Column List: '),
+	write(List),
+	nl,
+	!.
+
+valid_moves_row(Board, Length, Letter, Number, Height, Player, List, Acc):-
+	Letter =< Length,
+	Letter >= 1,
+	validate_move(Letter, Length, Number, Height, Board, NewBoard, Player),
+	Board \= NewBoard,
+	!,
+	append(List, [Letter-Number], List1),
+	Letter1 is Letter + 1,
+	valid_moves_row(Board, Length, Letter1, Number, Height, Player, List1, Acc),
+	!.
+valid_moves_row(Board, Length, Letter, Number, Height, Player, List, Acc):-
+	Letter =< Length,
+	Letter >= 1,
+	!,
+	Letter1 is Letter + 1,
+	valid_moves_row(Board, Length, Letter1, Number, Height, Player, List, Acc),
+	!.
+valid_moves_row(_,_,_,_,_,_,List,List):-
+	!.
+
+
+validate_move(1,_,Number,_,Board, NewBoard, Player):-
+	try_to_flip_horizontal(Number, Board, Player, FlippedBoard),
+	FlippedBoard \= Board,
+	reverse(FlippedBoard, ReversedBoard),
+	make_move(ReversedBoard,Number,1,x,ReversedNewBoard,1),
+	reverse(ReversedNewBoard, NewBoard),
+	!.
+validate_move(1,_,_,_,Board,Board,_):-
 	!,
 	fail.
 validate_move(Letter,_,1,_,Board, NewBoard, Player):-
-	try_to_flip(Letter, 1, Board, Player, NewBoard),
-	NewBoard \= Board,
+	try_to_flip_vertical(Letter, Board, Player, FlippedBoard),
+	FlippedBoard \= Board,
+	reverse(FlippedBoard, ReversedBoard),
+	make_move(ReversedBoard,1,Letter,x,ReversedNewBoard,1),
+	reverse(ReversedNewBoard, NewBoard),
 	!.
 validate_move(_,_,1,_,Board, Board,_):-
 	!,
 	fail.
+validate_move(Letter,Letter,Number,_,Board, NewBoard, Player):-
+	try_to_flip_horizontal(Number, Board, Player, FlippedBoard),
+	FlippedBoard \= Board,
+	reverse(FlippedBoard, ReversedBoard),
+	make_move(ReversedBoard,Number,Letter,x,ReversedNewBoard,1),
+	reverse(ReversedNewBoard, NewBoard),
+	!.
 validate_move(Letter,Letter,_,_,Board, Board, _):-
-	write('Still needs to check if it\'s a flip // Letter = MAX\n'),
 	!,
 	fail.
 validate_move(Letter,_,Number,Number, Board, NewBoard, Player):-
-	try_to_flip(Letter, Number, Board, Player, NewBoard),
-	write('Max\n'),
-	NewBoard \= Board,
+	try_to_flip_vertical(Letter, Board, Player, FlippedBoard),
+	FlippedBoard \= Board,
+	reverse(FlippedBoard, ReversedBoard),
+	make_move(ReversedBoard,Number,Letter,x,ReversedNewBoard,1),
+	reverse(ReversedNewBoard, NewBoard),
 	!.
 validate_move(_,_,Number,Number, Board, Board, _):-
 	!,
@@ -324,22 +253,31 @@ validate_move(Letter, Length, Number, Height, Board, NewBoard, Player):-
 	Number < Height,
 	Letter > 1,
 	Letter < Length,
-	try_to_flip(Letter, Number, Board, Player, NewBoard),
+	try_to_flip_vertical(Letter, Board, Player, NewBoard),
 	!.
-validate_move(Letter, Length, Number, Height, Board, Board, Player):-
+validate_move(Letter, Length, Number, Height, Board, NewBoard, Player):-
 	Number > 1,
 	Number < Height,
 	Letter > 1,
 	Letter < Length,
+	try_to_flip_horizontal(Number, Board, Player, NewBoard),
 	!.
-
+validate_move(Letter, Length, Number, Height, Board, NewBoard, Player):-
+	Number > 1,
+	Number < Height,
+	Letter > 1,
+	Letter < Length,
+	make_move(Board,Number,Letter,Player,NewBoard,0),
+	!.
+validate_move(_,_,_,_,Board,Board,_):-
+	!.
 % --------------------------------------------------------
 	
 % //////////////////// PLAY //////////////////////////
 play:-
     initialize_game_state,
     display_game,
-    \+game_loop,
+    game_loop,
 	game_over,
 	!.
 
@@ -361,8 +299,7 @@ game_loop:-
 	game_loop,
 	!.
 game_loop:-
-	!,
-	fail.
+	!.
 
 blue_turn:-
 	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
@@ -415,7 +352,7 @@ get_player_input(N, L, 3):-
 	!.
 
 get_human_input(N,L):-
-	write('Please input your move in the format lN (a4 p.e.): '),
+	write('Please input your move in the format letterNumber (b2 p.e.): '),
 	peek_char(Ch),
 	get_char_not_nl(Ch,ChLetter),
 	peek_char(Ch1),
@@ -425,12 +362,35 @@ get_human_input(N,L):-
 	clear_buffer.
 
 get_easy_bot_input(N,L):-
-	% Acho que isto poderia usar o predicado que somos obrigados a implementar chamado valid_moves(+Player, -ListOfMoves). e depois escolher um random da lista.
-	get_game_state(state(_,_,_,_,Height,Length)),
-	MaxN is Height + 1,
-	MaxL is Length + 1,
-	random(1, MaxN, N),
-	random(1, MaxL, L).
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_odd(Turn),
+	valid_moves('R', ListOfMoves),
+	length(ListOfMoves, Length),
+	random(0, Length, Index) ,
+	nth0(Index, ListOfMoves, Move),
+	nth0(0, Move, L),
+	nth0(1, Move, N),
+	write('Red move: '),
+	write('Letter: '),
+	write(L),
+	write(' Number: '),
+	write(N),
+	nl,
+	!.
+get_easy_bot_input(N,L):-
+	valid_moves('B', ListOfMoves),
+	length(ListOfMoves, Length),
+	random(0, Length, Index),
+	nth0(Index, ListOfMoves, Move),
+	nth0(0, Move, L),
+	nth0(1, Move, N),
+	write('Blue move: '),
+	write('Letter: '),
+	write(L),
+	write(' Number: '),
+	write(N),
+	nl,
+	!.
 
 get_hard_bot_input:-
 	write('Not implemented yet!'),
@@ -509,13 +469,16 @@ check_horizontal_win_aux([Head|Tail], N, _, Length):-
 % --------------------Game Mechanics----------------------
 % --------------------------------------------------------
 
-try_to_flip(Letter, Number, Board, Piece, NewBoard):-
-	check_if_can_flip_vertical(Board, Letter, Piece, List),
+try_to_flip_vertical(Letter, Board, Piece, NewBoard):-
+	reverse(Board, ReversedBoard),
+	check_if_can_flip_vertical(ReversedBoard, Letter, Piece, List),
 	write('List: '),
 	write(List),
 	nl,
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List).
-try_to_flip(_, _, Board, _, Board).
+try_to_flip_vertical(_, Board, _, Board):-
+	fail,
+	!.
 
 % check_if_can_flip_vertical(+Board, +Letter, +Piece, -List)	
 check_if_can_flip_vertical([Head|Tail], Letter, Piece, List):-
@@ -535,7 +498,6 @@ check_if_can_flip_vertical_aux([Head|Tail], Letter, _, Piece, [], Acc, Piece, Id
 % Se recebeu um piece pela segunda vez
 check_if_can_flip_vertical_aux(_, _, _, Piece, List, List, Piece, _):-
 	!.
-
 % Se recebe um x então recomeça a contar
 check_if_can_flip_vertical_aux([Head|Tail], Letter, _, x, _, Acc, Piece, Idx):-
 	nth1(Letter, Head, N1),
@@ -559,6 +521,48 @@ check_if_can_flip_vertical_aux([Head|Tail], Letter, Piece, N, _, Acc, Piece, Idx
 	nth1(Letter, Head, N1),
 	check_if_can_flip_vertical_aux(Tail, Letter, N, N1, [Idx], Acc, Piece, Idx1).
 
+try_to_flip_horizontal(Number, Board, Piece, NewBoard):-
+	check_if_can_flip_horizontal(Board, Number, Piece, List),
+	write('Horizontal List: '),
+	write(List),
+	nl,
+	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List).
+try_to_flip_horizontal(_, Board, _, Board):-
+	!,
+	fail.
+
+check_if_can_flip_horizontal(Board, Number, Piece, List):-
+	get_game_state(state(_,_,_,_,_,Length)),
+	Pos is Length-Number,
+	nth0(Pos, Board, Row),
+	check_if_can_flip_horizontal_aux(Row, x, Piece, [], List, 1).
+
+% caso encontrar piece pela primeira vez
+check_if_can_flip_horizontal_aux([Piece|Tail], _, Piece, [], Acc, Idx):-
+	!,
+	Idx1 is Idx + 1,
+	check_if_can_flip_horizontal_aux(Tail, Piece, Piece, [], Acc, Idx1).
+% caso encontrar piece pela segunda vez
+check_if_can_flip_horizontal_aux([Piece|_], _, Piece, List, List, _):-
+	!.
+% caso encontrar x deve resetar
+check_if_can_flip_horizontal_aux([x|Tail], _, Piece, _, Acc, Idx):-
+	Idx1 is Idx + 1,
+	check_if_can_flip_horizontal_aux(Tail, x, Piece, [], Acc, Idx1).
+% caso encontrar N a seguir a um N
+check_if_can_flip_horizontal_aux([Head|Tail], Head, Piece, List, Acc, Idx):-
+	Head \= Piece,
+	Head \= x,
+	Idx1 is Idx + 1,
+	append(List, [Idx], List1),
+	check_if_can_flip_horizontal_aux(Tail, Head, Piece, List1, Acc, Idx1).
+% caso encontrar N a seguir a um Piece
+check_if_can_flip_horizontal_aux([Head|Tail], Piece, Piece, List, Acc, Idx):-
+	Head \= Piece,
+	Head \= x,
+	Idx1 is Idx + 1,
+	append(List, [Idx], List1),
+	check_if_can_flip_horizontal_aux(Tail, Head, Piece, List1, Acc, Idx1).
 
 % flip_pieces(+Letter, +Number, +Direction, +Board, +Piece, -NewBoard, +List)
 flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List):-
@@ -572,9 +576,6 @@ flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List):-
 
 flip_pieces_aux(_, _, Board, _, Board, []):-!.
 flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, [Head|Tail]):-
-	write('Head: '),
-	write(Head),
-	nl,
 	make_move(Board,Head,Letter,Piece,ChangedBoard,1),
 	flip_pieces_aux(Letter, 'Vertical', ChangedBoard, Piece, NewBoard, Tail).
 flip_pieces_aux(Number, 'Horizontal', Board, Piece, NewBoard, [Head|Tail]):-
