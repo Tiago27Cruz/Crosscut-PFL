@@ -52,17 +52,19 @@ is_odd(N):-
 
 
 initialize_game_state:-
-	write('----------------Welcome to Crosscut!----------------\n'),
+	write('----------------Welcome to Crosscut!----------------\n\n'),
 	write('Please choose who is playing:\n'),
 	write('Options:\n'),
 	write('1 - Human [write 1]\n'),
 	write('2 - Easy Computer [write 2]\n'),
 	write('3 - Hard Computer [write 3]\n'),
-	get_player_info,
+	set_player_info,
+	write('------------------Board Dimensions------------------\n\n'),
 	write('Please choose the board dimensions:\n'),
 	get_height(State),
 	get_length(State),
     create_board(State),
+	write('\n--------------------Let\'s Start!--------------------\n\n'),
     retractall(game_state(_)),
     asserta(game_state(State)).
 
@@ -73,29 +75,31 @@ update_game_state(State):-
     retract(game_state(_)),
     asserta(game_state(State)).
 
-get_player_info:-
+set_player_info:-
 	repeat,
-	write('Player 1 is: '),
+	nl,
+	write('Player 1 (Red) is: '),
 	peek_char(Ch),
 	get_char_not_nl(Ch, Char),
 	clear_buffer,
-	convert_char_to_number(Char, Blue),
-	Blue > 0,
-	Blue < 4,
+	convert_char_to_number(Char, Red),
+	Red > 0,
+	Red < 4,
 	!,
 	repeat,
-	write('Player 2 is: '),
+	write('Player 2 (Blue) is: '),
 	peek_char(Ch1),
 	get_char_not_nl(Ch1, Char1),
 	clear_buffer,
-	convert_char_to_number(Char1, Red),
-	Red > 0,
-	Red < 4,
-	asserta(player_info(Blue, Red)),
+	convert_char_to_number(Char1, Blue),
+	Blue > 0,
+	Blue < 4,
+	nl,
+	asserta(player_info(Red, Blue)),
 	!.
 
-get_player_info(Blue, Red):-
-	player_info(Blue, Red).
+get_player_info(Red, Blue):-
+	player_info(Red, Blue).
 
 	
 % //////////////////// PLAY //////////////////////////
@@ -108,7 +112,7 @@ play:-
 
 game_over:-
 	get_game_state(state(Turn,_,_,_,_,_)),
-	is_odd(Turn),
+	is_even(Turn),
 	!,
 	write('BLUE WON!!').
 game_over:-
@@ -119,8 +123,8 @@ game_over:-
 % --------------------------------------------------------
 
 game_loop:-
-	blue_turn,
 	red_turn,
+	blue_turn,
 	game_loop,
 	!.
 game_loop:-
@@ -189,12 +193,6 @@ choose_move(N,L, Player, 2):-
 	nth0(Index, ListOfMoves, Move),
 	nth0(0, Move, L),
 	nth0(1, Move, N),
-	write('Bot move: '),
-	write('Letter: '),
-	write(L),
-	write(' Number: '),
-	write(N),
-	nl,
 	!.
 
 choose_move(N,L, Player, 3):-

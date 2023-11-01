@@ -38,7 +38,22 @@ move_aux([Head|Tail],N,L,CurPos,Saved,Piece,Acc,Bypass):-
 	move_aux(Tail,N,L,CurPos1,Saved1,Piece,Acc,Bypass).
 
 move_aux([],_,_,_,_,_,_,_):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_even(Turn),
+	get_player_info(Red,_),
+	Red < 2,
 	write('Invalid Input\n'),
+	!,
+	fail.
+move_aux([],_,_,_,_,_,_,_):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_odd(Turn),
+	get_player_info(_,Blue),
+	Blue < 2,
+	write('Invalid Input\n'),
+	!,
+	fail.
+move_aux([],_,_,_,_,_,_,_):-
 	!,
 	fail.
 
@@ -50,11 +65,41 @@ change_piece_in_line(Line,L,Row,Piece,Bypass):-
 	change_piece_in_line_aux(Line,L,1,[],Piece,Row,Bypass).
 
 change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_even(Turn),
+	get_player_info(Red,_),
+	Red < 2,
 	write('A Red piece is already here!\n'),
 	!,
 	fail.
+change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_odd(Turn),
+	get_player_info(_,Blue),
+	Blue < 2,
+	write('A Red piece is already here!\n'),
+	!,
+	fail.
+change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
+	!,
+	fail.
 change_piece_in_line_aux(['B'|_],L,L,_,_,_,0):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_even(Turn),
+	get_player_info(Red,_),
+	Red < 2,
 	write('A Blue piece is already here!\n'),
+	!,
+	fail.
+change_piece_in_line_aux(['B'|_],L,L,_,_,_,0):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_odd(Turn),
+	get_player_info(_,Blue),
+	Blue < 2,
+	write('A Blue piece is already here!\n'),
+	!,
+	fail.
+change_piece_in_line_aux(['B'|_],L,L,_,_,_,0):-
 	!,
 	fail.
 
@@ -68,6 +113,21 @@ change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc,Bypass):-
 	change_piece_in_line_aux(Tail,L,CurPos1,Saved1,Piece,Acc,Bypass).
 
 change_piece_in_line_aux([],_,_,_,_,_,_):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_odd(Turn),
+	get_player_info(_,Blue),
+	Blue < 2,
 	write('Wrong Input\n'),
+	!,
+	fail.
+change_piece_in_line_aux([],_,_,_,_,_,_):-
+	get_game_state(state(Turn,_,_,_,_,_)),
+	is_even(Turn),
+	get_player_info(Red,_),
+	Red < 2,
+	write('Wrong Input\n'),
+	!,
+	fail.
+change_piece_in_line_aux([],_,_,_,_,_,_):-
 	!,
 	fail.
