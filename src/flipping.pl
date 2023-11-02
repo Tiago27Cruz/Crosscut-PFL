@@ -10,10 +10,10 @@ flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List):-
 
 flip_pieces_aux(_, _, Board, _, Board, []):-!.
 flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, [Head|Tail]):-
-	move(Board,Head,Letter,Piece,ChangedBoard,1),
+	make_move(Board,Head,Letter,Piece,ChangedBoard,1),
 	flip_pieces_aux(Letter, 'Vertical', ChangedBoard, Piece, NewBoard, Tail).
 flip_pieces_aux(Number, 'Horizontal', Board, Piece, NewBoard, [Head|Tail]):-
-	move(Board,Number,Head,Piece,ChangedBoard,1),
+	make_move(Board,Number,Head,Piece,ChangedBoard,1),
 	flip_pieces_aux(Number, 'Horizontal', ChangedBoard, Piece, NewBoard, Tail).
 
 % --------------------------------------------------------
@@ -28,46 +28,59 @@ try_to_flip_vertical(Letter, Number, Board, Piece, NewBoard):-
 	List \= [],
 	validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, List, ListAbove, ListBelow).
 try_to_flip_vertical(_,_, Board, _, Board):-
-	fail,
-	!.
+    !,
+    fail.
 
 validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, List, _, _):-
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List),
 	reverse(NewBoard, NewBoard1),
 	reverse(Board, ReversedBoard),
-	count_new_friendly_segment(List, NewBoard1, Letter, Height, Piece, FriendlySegment),
+	count_new_friendly_vertical_segment(List, NewBoard1, Letter, Height, Piece, FriendlySegment),
 	check_prohibited_vertical_flip(ReversedBoard, List, Letter, FriendlySegment),
 	!.
 validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, _, ListAbove, _):-
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, ListAbove),
 	reverse(NewBoard, NewBoard1),
 	reverse(Board, ReversedBoard),
-	count_new_friendly_segment(ListAbove, NewBoard1, Letter, Height, Piece, FriendlySegment),
+	count_new_friendly_vertical_segment(ListAbove, NewBoard1, Letter, Height, Piece, FriendlySegment),
 	check_prohibited_vertical_flip(ReversedBoard, ListAbove, Letter, FriendlySegment),
 	!.
 validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, _, _, ListBelow):-
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, ListBelow),
 	reverse(NewBoard, NewBoard1),
 	reverse(Board, ReversedBoard),
-	count_new_friendly_segment(ListBelow, NewBoard1, Letter, Height, Piece, FriendlySegment),
+	count_new_friendly_vertical_segment(ListBelow, NewBoard1, Letter, Height, Piece, FriendlySegment),
 	check_prohibited_vertical_flip(ReversedBoard, ListBelow, Letter, FriendlySegment),
 	!.
 
 % check_if_can_flip_vertical(+Board, +Letter, +Piece, -List)
 check_if_can_flip_vertical(Board, Letter,Number, Piece, ListAbove, ListBelow, Height):-
-	get_flip_list(Board, Letter, Number, Height, Piece, UnsortedListAbove, UnsortedListBelow),
+	get_flip_list_vertical(Board, Letter, Number, Height, Piece, UnsortedListAbove, UnsortedListBelow),
 	sort(UnsortedListAbove, ListAbove),
 	sort(UnsortedListBelow, ListBelow).
 
-count_new_friendly_segment([], _, _, _, _, 0):-!.
-count_new_friendly_segment(SortedList, Board, Letter, Height, Piece, FriendlySegment):-
+count_new_friendly_vertical_segment([], _, _, _, _, 0):-!.
+count_new_friendly_vertical_segment(SortedList, Board, Letter, Height, Piece, FriendlySegment):-
 	nth1(1, SortedList, First),
 	count_up(Board, First, Letter, Height, Piece, Piece, -1, AboveFirstCount),
 	count_down(Board, First, Letter, Piece, Piece, 0, BelowFirstCount),
 	FriendlySegment is AboveFirstCount + BelowFirstCount.
 
+get_flip_list_vertical(Board, Letter, 1, Height, Piece, ListAbove, []):-
+	PosUp is Number + 1,
+	nth1(PosUp, Board, Row),
+	nth1(Letter, Row, N),
+	check_up(Board,PosUp, Letter, Height, N, Piece, [], ListAbove),
+	!.
 
-get_flip_list(Board, Letter, Number, Height, Piece, ListAbove, ListBelow):-
+get_flip_list_vertical(Board, Letter, Height, Height, Piece, ListAbove, []):-
+	PosUp is Number + 1,
+	nth1(PosUp, Board, Row),
+	nth1(Letter, Row, N),
+	check_up(Board,PosUp, Letter, Height, N, Piece, [], ListAbove),
+	!.
+
+get_flip_list_vertical(Board, Letter, Number, Height, Piece, ListAbove, ListBelow):-
 	PosUp is Number + 1,
 	PosDown is Number - 1,
 	nth1(PosUp, Board, Row),
@@ -148,38 +161,62 @@ count_right(_, _, _, N, Piece, Count, Count):-
 % ----------------- Horizontal Flip ----------------------
 % --------------------------------------------------------
 
-try_to_flip_horizontal(Number, Board, Piece, NewBoard):-
-	check_if_can_flip_horizontal(Board, Number, Piece, List),
-	write('Horizontal List: '),
+try_to_flip_horizontal(Number, Letter, Board, Piece, NewBoard):- % board is not flipped
+	get_game_state(state(_,_,_,_,Height,Length)),
+    Pos is Height - Number + 1,
+    nth1(Pos, Board, Row),
+	check_if_can_flip_horizontal(Row, Letter, Length, Piece, ListRight, ListLeft),
+	append(ListRight, ListLeft, List),
 	write(List),
-	nl,
-	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List).
-try_to_flip_horizontal(_, Board, _, Board):-
+	validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, List, ListRight, ListLeft).
+try_to_flip_horizontal(_, _, Board, _, Board):-
 	!,
 	fail.
 
-check_if_can_flip_horizontal(Board, Number, Letter, Piece, List, Height, Length):-
-	get_game_state(state(_,_,_,_,Height,Length)),
+validate_horizontal_flipping(Board, Row, Number, Height, Length, Piece, NewBoard, List, _, _):-
+	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List),
 	Pos is Height - Number + 1,
-	nth1(Pos, Board, Row),
-	check_if_can_flip_horizontal_aux(Row, x, Piece, [], List, 1),
-	length(List, FlipSize),
-	nth1(FlipSize, List, Last),
-    nth1(1, List, First),
-    Last1 is Last + 1,
-    First1 is First - 1,
-    count_right(Row, Last1, Length, Piece, Piece, 0, AfterLastCount),
-    count_left(Row, First1, Piece, Piece, 0, BeforeFistCount),
-	FlipSize1 is FlipSize + BeforeFistCount + AfterLastCount,
-	check_prohibited_horizontal_flip(Board, List, Row, Pos, FlipSize1).
+    nth1(Pos, NewBoard, FlippedRow),
+	count_new_friendly_horizontal_segment(List, FlippedRow, Length, Piece, FriendlySegment),
+	check_prohibited_horizontal_flip(Board, List, Row, Number, FriendlySegment),
+	!.
+validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, _, ListRight, _):-
+	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, ListRight),
+	Pos is Height - Number + 1,
+    nth1(Pos, NewBoard, FlippedRow),
+	count_new_friendly_horizontal_segment(ListRight, FlippedRow, Length, Piece, FriendlySegment),
+	check_prohibited_horizontal_flip(Board, ListRight, Row, Number, FriendlySegment),
+	!.
+validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, _, _, ListLeft):-
+	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, ListLeft),
+	Pos is Height - Number + 1,
+    nth1(Pos, NewBoard, FlippedRow),
+	count_new_friendly_horizontal_segment(ListLeft, FlippedRow, Length, Piece, FriendlySegment),
+	check_prohibited_horizontal_flip(Board, ListLeft, Row, Number, FriendlySegment),
+	!.
 
-get_flip_list_horizontal(Board, Letter, Piece, Length ListAbove, ListBelow):-
+
+check_if_can_flip_horizontal(Row, Letter, Length, Piece, ListRight, ListLeft):-
+	get_flip_list_horizontal(Row, Letter, Piece, Length, UnsortedListRight, UnsortedListLeft),
+	sort(UnsortedListRight, ListRight),
+    sort(UnsortedListLeft, ListLeft).
+
+
+count_new_friendly_horizontal_segment([], _, _, _, 0):-!.
+count_new_friendly_horizontal_segment(SortedList, Row, Length, Piece, FriendlySegment):-
+	nth1(1, SortedList, First),
+	count_right(Row, First, Length, Piece, Piece, -1, AfterFirstCount),
+	count_left(Row, First, Piece, Piece, 0, BeforeFirstCount),
+	FriendlySegment is AfterFirstCount + BeforeFirstCount.
+
+
+get_flip_list_horizontal(Row, Letter, Piece, Length, ListRight, ListLeft):-
 	PosRight is Letter + 1,
-	PosLeft is Letter- 1,
-	nth1(PosUp, Board, Row),
-	check_right(Row, PosUp, Length, Piece, Piece, [], ListAbove),
-	nth1(PosDown, Board, Row1),
-	check_left(Row1, PosDown, Piece, Piece, [], ListBelow).	
+	PosLeft is Letter - 1,
+	nth1(PosRight, Row, N),
+	check_right(Row, PosRight, Length, N, Piece, [], ListRight),
+	nth1(PosLeft, Row, N1),
+	check_left(Row, PosLeft, N1, Piece, [], ListLeft).
 
 check_right(_,_,_,Piece,Piece,Acc,Acc):-!.
 check_right(_, Length, Length, _, _, _, []):-!.
