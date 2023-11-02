@@ -59,7 +59,7 @@ validate_move(1,_,_,_,Board,Board,_):-
 	fail.
 
 validate_move(Letter,_,1,_,Board, NewBoard, Player):-
-	try_to_flip_vertical(1, Letter, Board, Player, FlippedBoard),
+	try_to_flip_vertical(Letter, 1, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
 	make_move(FlippedBoard,1,Letter,x,NewBoard,1),
 	!.

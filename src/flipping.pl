@@ -67,18 +67,18 @@ count_new_friendly_vertical_segment(SortedList, Board, Letter, Height, Piece, Fr
 	FriendlySegment is AboveFirstCount + BelowFirstCount.
 
 get_flip_list_vertical(Board, Letter, 1, Height, Piece, ListAbove, []):-
-	PosUp is Number + 1,
-	nth1(PosUp, Board, Row),
+	nth1(2, Board, Row),
 	nth1(Letter, Row, N),
-	check_up(Board,PosUp, Letter, Height, N, Piece, [], ListAbove),
+	check_up(Board,2, Letter, Height, N, Piece, [], ListAbove),
 	!.
 
-get_flip_list_vertical(Board, Letter, Height, Height, Piece, ListAbove, []):-
-	PosUp is Number + 1,
-	nth1(PosUp, Board, Row),
-	nth1(Letter, Row, N),
-	check_up(Board,PosUp, Letter, Height, N, Piece, [], ListAbove),
+get_flip_list_vertical(Board, Letter, Height, Height, Piece, [], ListBelow):-
+	PosDown is Height - 1,
+    nth1(PosDown, Board, Row1),
+	nth1(Letter, Row1, N1),
+	check_down(Board,PosDown, Letter, N1, Piece, [], ListBelow),
 	!.
+
 
 get_flip_list_vertical(Board, Letter, Number, Height, Piece, ListAbove, ListBelow):-
 	PosUp is Number + 1,
@@ -209,6 +209,15 @@ count_new_friendly_horizontal_segment(SortedList, Row, Length, Piece, FriendlySe
 	count_left(Row, First, Piece, Piece, 0, BeforeFirstCount),
 	FriendlySegment is AfterFirstCount + BeforeFirstCount.
 
+get_flip_list_horizontal(Row, 1, Piece, Length, ListRight, []):-
+	nth1(2, Row, N),
+	check_right(Row, 2, Length, N, Piece, [], ListRight),
+    !.
+
+get_flip_list_horizontal(Row, Length, Piece, Length, [], ListLeft):-
+	PosLeft is Length - 1,
+	nth1(PosLeft, Row, N1),
+	check_left(Row, PosLeft, N1, Piece, [], ListLeft).
 
 get_flip_list_horizontal(Row, Letter, Piece, Length, ListRight, ListLeft):-
 	PosRight is Letter + 1,
