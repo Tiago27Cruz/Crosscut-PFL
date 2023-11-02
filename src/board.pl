@@ -65,13 +65,63 @@ print_bottom(L):-
 	write('_____|'),
     print_bottom(L1).
 
-display_game:-
-	get_game_state(state(_, _, _, Board,H,L)),
+print_board_turn(Turn):-
+	is_odd(Turn),
+	write('-----------> Turn Number '),
+	write(Turn),
 	nl,
+	nl,
+	write('-----> Red\'s Turn\n').
+print_board_turn(Turn):-
+	is_even(Turn),
+	write('-----------> Turn Number '),
+	write(Turn),
+	nl,
+	nl,
+	write('-----> Blue\'s Turn\n').
+
+display_game:-
+	get_game_state(state(Turn, _, _, Board,H,L)),
+	nl,
+	DisplayTurn is Turn + 1,
+	print_board_turn(DisplayTurn),
+	display_board(state(_, _, _, Board,H,L)),
+    !.
+
+display_board(state(_, _, _, Board,H,L)):-
 	write('   _'),
 	print_board_header(L),
-    print_board(Board,H,L),
-    !.
+	print_board(Board,H,L),
+	!.
+
+display_finished_game(Winner):-
+	get_game_state(state(_, _, _, Board,H,L)),
+	nl,
+	write('------------------------Game Over---------------------\n\n'),
+	write('-----> Winner: '),
+	write_winner(Winner),
+	nl,
+	nl,
+	display_board(state(_, _, _, Board,H,L)),
+	nl,
+	write('-----> Play Again? (y/n)\n'),
+	repeat,
+	peek_char(Ch),
+	get_char_not_nl(Ch,ChLetter),
+	clear_buffer,
+	play_again(ChLetter),
+	!.
+
+write_winner('R'):-
+	write('Red').
+write_winner('B'):-
+	write('Blue').
+
+play_again('y'):-
+	play.
+play_again('n'):-
+	write('\nThanks for playing!\n').
+
 % --------------------------------------------------------
 % ----------------- Board Generation ---------------------
 % --------------------------------------------------------

@@ -114,9 +114,9 @@ game_over:-
 	get_game_state(state(Turn,_,_,_,_,_)),
 	is_even(Turn),
 	!,
-	write('BLUE WON!!').
+	display_finished_game('B').
 game_over:-
-	write('RED WON!!').
+	display_finished_game('R').
 	
 % --------------------------------------------------------
 % ------------------- Players Turn -----------------------
@@ -133,25 +133,23 @@ game_loop:-
 blue_turn:-
 	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
     Turn is TurnN + 1,
-	write('Blue\'s turn.\n'),
     % move
 	move_loop(Board, NewBoard, 'B', Number, Letter, Height, Length),
 	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
-	display_game,
 	% check win
 	check_win(NewBoard, Letter, Height, Number, Length),
+	display_game,
     !.
 
 red_turn:-
 	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
     Turn is TurnN + 1,
-	write('Red\'s turn.\n'),
     % Get move
 	move_loop(Board, NewBoard, 'R', Number, Letter, Height, Length),
 	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
-    display_game,
 	% check win
 	check_win(NewBoard, Letter, Height, Number, Length),
+	display_game,
     !.
 
 % --------------------------------------------------------
@@ -159,11 +157,11 @@ red_turn:-
 % --------------------------------------------------------
 
 get_input(N, L, 'B'):-
-	get_player_info(Blue, _),
+	get_player_info(_, Blue),
 	get_player_input(N, L, Blue, 'B'),
 	!.
 get_input(N, L, 'R'):-
-    get_player_info(_, Red),
+    get_player_info(Red, _),
 	get_player_input(N, L, Red, 'R'),
     !.
 
