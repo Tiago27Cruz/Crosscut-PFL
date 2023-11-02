@@ -175,7 +175,7 @@ get_player_input(N, L, Difficulty, Player):-
 	!.
 
 get_human_input(N,L):-
-	write('Please input your move in the format letterNumber (b2 p.e.): '),
+	write('\nPlease input your move in the format letterNumber (b2 p.e.): '),
 	peek_char(Ch),
 	get_char_not_nl(Ch,ChLetter),
 	peek_char(Ch1),
@@ -194,6 +194,7 @@ choose_move(N,L, Player, 2):-
 	!.
 
 choose_move(N,L, Player, 3):-
+	valid_moves(Player, ListOfMoves),
 	write('Not implemented yet!'),
 	!,
 	fail.

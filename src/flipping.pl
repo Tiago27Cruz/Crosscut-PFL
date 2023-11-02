@@ -26,26 +26,26 @@ try_to_flip_vertical(Letter, Number, Board, Piece, NewBoard):-
 	check_if_can_flip_vertical(ReversedBoard, Letter,Number, Piece, ListAbove, ListBelow, Height),
 	append(ListAbove, ListBelow, List),
 	List \= [],
-	validate_flipping(Board, Letter, Height, Piece, NewBoard, List, ListAbove, ListBelow).
+	validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, List, ListAbove, ListBelow).
 try_to_flip_vertical(_,_, Board, _, Board):-
 	fail,
 	!.
 
-validate_flipping(Board, Letter, Height, Piece, NewBoard, List, _, _):-
+validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, List, _, _):-
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List),
 	reverse(NewBoard, NewBoard1),
 	reverse(Board, ReversedBoard),
 	count_new_friendly_segment(List, NewBoard1, Letter, Height, Piece, FriendlySegment),
 	check_prohibited_vertical_flip(ReversedBoard, List, Letter, FriendlySegment),
 	!.
-validate_flipping(Board, Letter, Height, Piece, NewBoard, _, ListAbove, _):-
+validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, _, ListAbove, _):-
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, ListAbove),
 	reverse(NewBoard, NewBoard1),
 	reverse(Board, ReversedBoard),
 	count_new_friendly_segment(ListAbove, NewBoard1, Letter, Height, Piece, FriendlySegment),
 	check_prohibited_vertical_flip(ReversedBoard, ListAbove, Letter, FriendlySegment),
 	!.
-validate_flipping(Board, Letter, Height, Piece, NewBoard, _, _, ListBelow):-
+validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, _, _, ListBelow):-
 	flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, ListBelow),
 	reverse(NewBoard, NewBoard1),
 	reverse(Board, ReversedBoard),
@@ -77,8 +77,6 @@ get_flip_list(Board, Letter, Number, Height, Piece, ListAbove, ListBelow):-
 	nth1(Letter, Row1, N1),
 	check_down(Board,PosDown, Letter, N1, Piece, [], ListBelow).
 
-% contar as de cor oposta em cima até encontrar um da mesma cor sem interrupções, em que nesse caso retorna lista com as peças encotnradas, caso contrario retorna nada
-
 check_up(_, Height, _, Height, Piece, Piece, Acc, Acc):-!.
 check_up(_, Height, _, Height, _, _, _, []):-!.
 check_up(_,_,_,_,x,_,_,[]):-!.
@@ -104,44 +102,6 @@ check_down(Board, CurPos, Letter, CurPiece, Piece, CurList, Acc):-
 	nth1(CurPos1, Board, Row),
 	nth1(Letter, Row, N),
 	check_down(Board, CurPos1, Letter, N, Piece, CurList1, Acc).
-
-
-
-% caso base para falhar
-check_if_can_flip_vertical_aux([], _, _, _, _, _,_):-
-	!,
-	fail.
-% Se recebeu um piece pela primeira vez
-check_if_can_flip_vertical_aux([Head|Tail], Letter, _, Piece, [], Acc, Piece, Idx):-
-	!,
-	Idx1 is Idx + 1,
-	nth1(Letter, Head, N),
-	check_if_can_flip_vertical_aux(Tail, Letter, Piece, N, [], Acc, Piece, Idx1).
-% Se recebeu um piece pela segunda vez
-check_if_can_flip_vertical_aux(_, _, _, Piece, List, List, Piece, _):-
-	!.
-% Se recebe um x então deverá falhar
-check_if_can_flip_vertical_aux([Head|Tail], Letter, _, x, _, Acc, Piece, Idx):-
-	nth1(Letter, Head, N1),
-	Idx1 is Idx + 1,
-	check_if_can_flip_vertical_aux(Tail, Letter, x, N1, [], Acc, Piece, Idx1).
-
-% Se recebe um N=N onde é diferente de x
-check_if_can_flip_vertical_aux([Head|Tail], Letter, N, N, List, Acc, Piece, Idx):-
-	N \= Piece,
-	N \= x,
-	Idx1 is Idx + 1,
-	nth1(Letter, Head, N1),
-	append(List, [Idx], List1),
-	check_if_can_flip_vertical_aux(Tail, Letter, N, N1, List1, Acc, Piece, Idx1).
-
-% Se tem um Piece e depois um R/B
-check_if_can_flip_vertical_aux([Head|Tail], Letter, Piece, N, _, Acc, Piece, Idx):-
-	N \= Piece,
-	N \= x,
-	Idx1 is Idx + 1,
-	nth1(Letter, Head, N1),
-	check_if_can_flip_vertical_aux(Tail, Letter, N, N1, [Idx], Acc, Piece, Idx1).
 
 % --------------------------------------------------------
 % -------------- Verticle Flip Exception -----------------
@@ -198,8 +158,8 @@ try_to_flip_horizontal(_, Board, _, Board):-
 	!,
 	fail.
 
-check_if_can_flip_horizontal(Board, Number, Piece, List):-
-	get_game_state(state(_,_,_,_,Height,_)),
+check_if_can_flip_horizontal(Board, Number, Letter, Piece, List, Height, Length):-
+	get_game_state(state(_,_,_,_,Height,Length)),
 	Pos is Height - Number + 1,
 	nth1(Pos, Board, Row),
 	check_if_can_flip_horizontal_aux(Row, x, Piece, [], List, 1),
@@ -208,11 +168,62 @@ check_if_can_flip_horizontal(Board, Number, Piece, List):-
     nth1(1, List, First),
     Last1 is Last + 1,
     First1 is First - 1,
-    get_game_state(state(_, _, _, _, _, Length)),
     count_right(Row, Last1, Length, Piece, Piece, 0, AfterLastCount),
     count_left(Row, First1, Piece, Piece, 0, BeforeFistCount),
 	FlipSize1 is FlipSize + BeforeFistCount + AfterLastCount,
 	check_prohibited_horizontal_flip(Board, List, Row, Pos, FlipSize1).
+
+get_flip_list_horizontal(Board, Letter, Piece, Length ListAbove, ListBelow):-
+	PosRight is Letter + 1,
+	PosLeft is Letter- 1,
+	nth1(PosUp, Board, Row),
+	check_right(Row, PosUp, Length, Piece, Piece, [], ListAbove),
+	nth1(PosDown, Board, Row1),
+	check_left(Row1, PosDown, Piece, Piece, [], ListBelow).	
+
+check_right(_,_,_,Piece,Piece,Acc,Acc):-!.
+check_right(_, Length, Length, _, _, _, []):-!.
+check_right(_,_,_,x,_,_,[]):-!.
+check_right(Row, CurPos, Length, CurPiece, Piece, CurList, Acc):-
+	CurPiece \= Piece,
+	CurPiece \= x,
+	append(CurList, [CurPos], CurList1),
+	CurPos1 is CurPos + 1,
+	nth1(CurPos1, Row, N),
+	check_right(Row, CurPos1, Length, N, Piece, CurList1, Acc).
+
+check_left(_,_,Piece,Piece,Acc,Acc):-!.
+check_left(_, 1, _, _, _, []):-!.
+check_left(_,_,x,_,_,[]):-!.
+check_left(Row, CurPos, CurPiece, Piece, CurList, Acc):-
+	CurPiece \= Piece,
+	CurPiece \= x,
+	append(CurList, [CurPos], CurList1),
+	CurPos1 is CurPos - 1,
+	nth1(CurPos1, Row, N),
+	check_left(Row, CurPos1, N, Piece, CurList1, Acc).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 % caso encontrar piece pela primeira vez
 check_if_can_flip_horizontal_aux([Piece|Tail], _, Piece, [], Acc, Idx):-
