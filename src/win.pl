@@ -2,7 +2,7 @@
 % --------------------- Check Win ------------------------
 % --------------------------------------------------------
 
-check_win(Board, Letter, Height, Number, Length):-
+check_win(state(_,_,_,Board,Height,Length), move(Number, Letter)):-
 	check_vertical_win(Board, Letter, Height),
 	check_horizontal_win(Board, Number, Length, Height).
 

@@ -126,15 +126,15 @@ play_again('n'):-
 % ----------------- Board Generation ---------------------
 % --------------------------------------------------------
 
-create_board(state(0, 0, 0, Board, Height, Length)) :-
-    create_board_aux(Board, Height, Length, []).
+initial_state(size(Height, Length), state(0, 0, 0, Board, Height, Length)) :-
+    create_board(Board, Height, Length, []).
 
-create_board_aux(Board, 0, _, Board).
-create_board_aux(Board, Height, Length, Acc) :-
+create_board(Board, 0, _, Board).
+create_board(Board, Height, Length, Acc) :-
     Height > 0,
     Height1 is Height - 1,
     create_row(Length, Row),
-    create_board_aux(Board, Height1, Length, [Row | Acc]).
+    create_board(Board, Height1, Length, [Row | Acc]).
 
 create_row(0, []).
 create_row(Length, [x | Tail]) :-
@@ -148,7 +148,7 @@ validate_height_length(N):-
 validate_height_length(_):-
     fail.
 
-get_height(state(_,_,_,_,Height,_)) :-
+get_height(size(Height,_)) :-
 	repeat,
     write('Enter the chosen Height(Between 5 and 9): '),
     peek_char(Ch),
@@ -158,7 +158,7 @@ get_height(state(_,_,_,_,Height,_)) :-
 	validate_height_length(Height),
 	!.
 	
-get_length(state(_,_,_,_,_,Length)) :-
+get_length(size(_,Length)) :-
 	repeat,
     write('Enter the chosen Length(Between 5 and 9): '),
     peek_char(Ch),
@@ -166,4 +166,9 @@ get_length(state(_,_,_,_,_,Length)) :-
 	clear_buffer,
 	convert_char_to_number(Char,Length),
 	validate_height_length(Length),
+	!.
+
+get_size(size(Height, Length)):-
+	get_height(size(Height,_)),
+	get_length(size(_,Length)),
 	!.

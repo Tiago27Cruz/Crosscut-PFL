@@ -61,9 +61,8 @@ initialize_game_state:-
 	set_player_info,
 	write('------------------Board Dimensions------------------\n\n'),
 	write('Please choose the board dimensions:\n'),
-	get_height(State),
-	get_length(State),
-    create_board(State),
+	get_size(Size),
+    initial_state(Size, State),
 	write('\n--------------------Let\'s Start!--------------------\n\n'),
     retractall(game_state(_)),
     asserta(game_state(State)).
@@ -122,59 +121,52 @@ game_over:-
 % ------------------- Players Turn -----------------------
 % --------------------------------------------------------
 
+get_player(state(Turn,_,_,_,_,_), 'R'):-
+	is_even(Turn),
+	!.
+get_player(state(Turn,_,_,_,_,_), 'B'):-
+	is_odd(Turn),
+	!.
+
 game_loop:-
-	red_turn,
-	blue_turn,
+	get_game_state(State),
+	make_play(State, Move, PlayedState),
+	next_turn(PlayedState, NewState),
+	update_game_state(NewState),
+	check_win(NewState, Move),
+	display_game,
 	game_loop,
 	!.
 game_loop:-
 	!.
 
-blue_turn:-
-	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
-    Turn is TurnN + 1,
-    % move
-	move_loop(Board, NewBoard, 'B', Number, Letter, Height, Length),
-	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
-	% check win
-	check_win(NewBoard, Letter, Height, Number, Length),
-	display_game,
-    !.
-
-red_turn:-
-	get_game_state(state(TurnN,P1,P2,Board,Height,Length)),
-    Turn is TurnN + 1,
-    % Get move
-	move_loop(Board, NewBoard, 'R', Number, Letter, Height, Length),
-	update_game_state(state(Turn,P1, P2, NewBoard, Height,Length)),
-	% check win
-	check_win(NewBoard, Letter, Height, Number, Length),
-	display_game,
-    !.
+next_turn(state(Turn, P1, P2, Board, Height, Length), state(NewTurn, P1, P2, Board, Height, Length)):-
+	NewTurn is Turn + 1.
 
 % --------------------------------------------------------
 % ---------------------- Input ---------------------------
 % --------------------------------------------------------
 
-get_input(N, L, 'B'):-
+get_input(move(N, L), 'B'):-
 	get_player_info(_, Blue),
-	get_player_input(N, L, Blue, 'B'),
+	get_player_input(move(N, L), Blue, 'B'),
 	!.
-get_input(N, L, 'R'):-
+get_input(move(N, L), 'R'):-
     get_player_info(Red, _),
-	get_player_input(N, L, Red, 'R'),
+	get_player_input(move(N, L), Red, 'R'),
     !.
 
-get_player_input(N, L, 1, _):-
+get_player_input(move(N, L), 1, _):-
 	repeat,
-	get_human_input(N,L),
+	get_human_input(move(N, L)),
 	!.
-get_player_input(N, L, Difficulty, Player):-
+get_player_input(move(N, L), Mode, Player):-
 	repeat,
-	choose_move(N,L, Player, Difficulty),
+	Level is Mode - 1,
+	choose_move(move(N, L), Player, Level),
 	!.
 
-get_human_input(N,L):-
+get_human_input(move(N, L)):-
 	write('\nPlease input your move in the format letterNumber (b2 p.e.): '),
 	peek_char(Ch),
 	get_char_not_nl(Ch,ChLetter),
@@ -184,7 +176,7 @@ get_human_input(N,L):-
     convert_letter_to_number(ChLetter, L),
 	clear_buffer.
 
-choose_move(N,L, Player, 2):-
+choose_move(move(N, L), Player, 1):-
 	valid_moves(Player, ListOfMoves),
 	length(ListOfMoves, Length),
 	random(0, Length, Index) ,
@@ -193,7 +185,7 @@ choose_move(N,L, Player, 2):-
 	nth0(1, Move, N),
 	!.
 
-choose_move(N,L, Player, 3):-
+choose_move(move(N, L), Player, 2):-
 	valid_moves(Player, ListOfMoves),
 	write('Not implemented yet!'),
 	!,
