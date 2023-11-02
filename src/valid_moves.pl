@@ -49,7 +49,7 @@ valid_moves_row(_,_,_,_,_,_,List,List):-
 % --------------------------------------------------------
 
 validate_move(1,_,Number,_,Board, NewBoard, Player):-
-	try_to_flip_horizontal(Number, Board, Player, FlippedBoard),
+	try_to_flip_horizontal(Number, 1, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
 	make_move(FlippedBoard,Number,1,x,NewBoard,1),
 	!.
@@ -59,7 +59,7 @@ validate_move(1,_,_,_,Board,Board,_):-
 	fail.
 
 validate_move(Letter,_,1,_,Board, NewBoard, Player):-
-	try_to_flip_vertical(Letter, Board, Player, FlippedBoard),
+	try_to_flip_vertical(1, Letter, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
 	make_move(FlippedBoard,1,Letter,x,NewBoard,1),
 	!.
@@ -69,7 +69,7 @@ validate_move(_,_,1,_,Board, Board,_):-
 	fail.
 
 validate_move(Letter,Letter,Number,_,Board, NewBoard, Player):-
-	try_to_flip_horizontal(Number, Board, Player, FlippedBoard),
+	try_to_flip_horizontal(Number, Letter, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
 	make_move(FlippedBoard,Number,Letter,x,NewBoard,1),
 	!.
@@ -93,7 +93,6 @@ validate_move(Letter, Length, Number, Height, Board, NewBoard, Player):-
 	Number < Height,
 	Letter > 1,
 	Letter < Length,
-	write('Trying to flip vertical\n'),
 	try_to_flip_vertical(Letter, Number, Board, Player, NewBoard),
 	!.
 
@@ -102,8 +101,7 @@ validate_move(Letter, Length, Number, Height, Board, NewBoard, Player):-
 	Number < Height,
 	Letter > 1,
 	Letter < Length,
-	write('Trying to flip horizontal\n'),
-	try_to_flip_horizontal(Number, Board, Player, NewBoard),
+	try_to_flip_horizontal(Number, Letter, Board, Player, NewBoard),
 	!.
 
 validate_move(_,_,_,_,Board,Board,_):-
