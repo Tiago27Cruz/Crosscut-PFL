@@ -167,7 +167,6 @@ try_to_flip_horizontal(Number, Letter, Board, Piece, NewBoard):- % board is not 
     nth1(Pos, Board, Row),
 	check_if_can_flip_horizontal(Row, Letter, Length, Piece, ListRight, ListLeft),
 	append(ListRight, ListLeft, List),
-	write(List),
 	validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, List, ListRight, ListLeft).
 try_to_flip_horizontal(_, _, Board, _, Board):-
 	!,
@@ -248,55 +247,6 @@ check_left(Row, CurPos, CurPiece, Piece, CurList, Acc):-
 	CurPos1 is CurPos - 1,
 	nth1(CurPos1, Row, N),
 	check_left(Row, CurPos1, N, Piece, CurList1, Acc).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-% caso encontrar piece pela primeira vez
-check_if_can_flip_horizontal_aux([Piece|Tail], _, Piece, [], Acc, Idx):-
-	!,
-	Idx1 is Idx + 1,
-	check_if_can_flip_horizontal_aux(Tail, Piece, Piece, [], Acc, Idx1).
-% caso encontrar piece pela segunda vez
-check_if_can_flip_horizontal_aux([Piece|_], _, Piece, List, List, _):-
-	!.
-% caso encontrar x deve resetar
-check_if_can_flip_horizontal_aux([x|Tail], _, Piece, _, Acc, Idx):-
-	Idx1 is Idx + 1,
-	check_if_can_flip_horizontal_aux(Tail, x, Piece, [], Acc, Idx1).
-% caso encontrar N a seguir a um N
-check_if_can_flip_horizontal_aux([Head|Tail], Head, Piece, List, Acc, Idx):-
-	Head \= Piece,
-	Head \= x,
-	Idx1 is Idx + 1,
-	append(List, [Idx], List1),
-	check_if_can_flip_horizontal_aux(Tail, Head, Piece, List1, Acc, Idx1).
-% caso encontrar N a seguir a um Piece
-check_if_can_flip_horizontal_aux([Head|Tail], Piece, Piece, List, Acc, Idx):-
-	Head \= Piece,
-	Head \= x,
-	Idx1 is Idx + 1,
-	append(List, [Idx], List1),
-	check_if_can_flip_horizontal_aux(Tail, Head, Piece, List1, Acc, Idx1).
 
 % --------------------------------------------------------
 % ------------- Horizontal Flip Exception ----------------

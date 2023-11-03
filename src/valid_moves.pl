@@ -4,45 +4,42 @@
 
 % valid_moves(+Player, -ListOfMoves)
 valid_moves(Player, ListOfMoves):-
-	get_game_state(state(_,_,_,Board,Height,Length)),
-	valid_moves_column(Board, Height, Length, Player, 1, [], ListOfMoves),
-	!.
+    get_game_state(state(_,_,_,Board,Height,Length)),
+    valid_moves_column(Board, Height, Length, Player, 1, [], ListOfMoves),
+    !.
 
 valid_moves_column(Board, Height, Length, Player, Number, List, ListOfMoves):-
-	Number =< Height,
-	Number >= 1,
-	!,
-	valid_moves_row(Board, Length, 1, Number, Height, Player, [], List1),
-	Number1 is Number + 1,
-	append(List1, List, List2),
-	valid_moves_column(Board, Height, Length, Player, Number1, List2, ListOfMoves),
-	!.
+    Number =< Height,
+    Number >= 1,
+    !,
+    valid_moves_row(Board, Length, 1, Number, Height, Player, [], List1),
+    Number1 is Number + 1,
+    append(List1, List, List2),
+    valid_moves_column(Board, Height, Length, Player, Number1, List2, ListOfMoves),
+    !.
 valid_moves_column(_,_,_,_,_,List,List):-
-	write('Column List: '),
-	write(List),
-	nl,
-	!.
+    !.
 
 valid_moves_row(Board, Length, Letter, Number, Height, Player, List, Acc):-
-	Letter =< Length,
-	Letter >= 1,
-	make_move(Board, Number, Letter, Player, MovedBoard, 0),
-	validate_move(Letter, Length, Number, Height, MovedBoard, NewBoard, Player),
-	Board \= NewBoard,
-	!,
-	append(List, [[Letter,Number]], List1),
-	Letter1 is Letter + 1,
-	valid_moves_row(Board, Length, Letter1, Number, Height, Player, List1, Acc),
-	!.
+    Letter =< Length,
+    Letter >= 1,
+    make_move(Board, Number, Letter, Player, MovedBoard, 0),
+    validate_move(Letter, Length, Number, Height, MovedBoard, NewBoard, Player),
+    Board \= NewBoard,
+    !,
+    append(List, [move(Number,Letter)], List1),
+    Letter1 is Letter + 1,
+    valid_moves_row(Board, Length, Letter1, Number, Height, Player, List1, Acc),
+    !.
 valid_moves_row(Board, Length, Letter, Number, Height, Player, List, Acc):-
-	Letter =< Length,
-	Letter >= 1,
-	!,
-	Letter1 is Letter + 1,
-	valid_moves_row(Board, Length, Letter1, Number, Height, Player, List, Acc),
-	!.
+    Letter =< Length,
+    Letter >= 1,
+    !,
+    Letter1 is Letter + 1,
+    valid_moves_row(Board, Length, Letter1, Number, Height, Player, List, Acc),
+    !.
 valid_moves_row(_,_,_,_,_,_,List,List):-
-	!.
+    !.
 
 % --------------------------------------------------------
 % ------------------ Validate move -----------------------
