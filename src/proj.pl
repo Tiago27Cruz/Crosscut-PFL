@@ -186,30 +186,35 @@ choose_move(move(N, L), Player, 1):-
 % get all moves and choose the one with the biggest value
 choose_move(Move, Player, 2):-
 	valid_moves(Player, ListOfMoves),
-	get_best_move(ListOfMoves, Player, 100, _, Move),
-	write('Chosen Move: '),
-	write(Move),
-	nl,
+	get_best_moves(ListOfMoves, Player, 100, [], BestMoves),
+	length(BestMoves, Length),
+	random(0, Length, Index),
+	nth0(Index, BestMoves, Move),
 	!.
 
-get_best_move([],_,_,BestMove, BestMove):-!.
-get_best_move([Move|Tail], Player, BestValue, _, BestMove):-
+get_best_moves([],_,_,BestMoves, BestMoves):-!.
+get_best_moves([Move|Tail], Player, BestValue, CurMoves, BestMoves):-
     get_game_state(State),
     move(State, Move, PlayedState),
     value(PlayedState, Move, Player, Value),
-    Value < BestValue,
+    Value =< BestValue,
     !,
-    write('New Best Move: '),
-    write(Move),
-    nl,
-    get_best_move(Tail, Player, Value, Move, BestMove).
-get_best_move([_|Tail], Player, BestValue, CurrentBestMove, BestMove):-
-    get_best_move(Tail, Player, BestValue, CurrentBestMove, BestMove).
+    get_new_list(BestValue, Value, Move, CurMoves, NewMoves),
+    get_best_moves(Tail, Player, Value, NewMoves, BestMoves).
+get_best_moves([_|Tail], Player, BestValue, CurMoves, BestMoves):-
+    get_best_moves(Tail, Player, BestValue, CurMoves, BestMoves).
+
+
+get_new_list(BestValue, NewValue, Move, _, [Move]):-
+	NewValue < BestValue,
+	!.
+get_new_list(_, _, Move, CurList, [Move|CurList]):-!.
 
 % Game State Evaluation: describe how to evaluate the game state. The predicate should be called value(+GameState, +Player, -Value).
 value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
-	count_up(Board, Number, Letter, Height, Player, Player, -1, Up),
-	count_down(Board, Number, Letter, Player, Player, 0, Down),
+	reverse(Board, ReversedBoard),
+	count_up(ReversedBoard, Number, Letter, Height, Player, Player, -1, Up),
+	count_down(ReversedBoard, Number, Letter, Player, Player, 0, Down),
 	VerticalSegment is Up + Down,
 	VerticalValue is Height - VerticalSegment -2,
 	Pos is Height - Number + 1,
@@ -219,23 +224,6 @@ value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value
 	HorizontalSegment is Left + Right,
 	HorizontalValue is Length - HorizontalSegment -2,
 	Value is min(VerticalValue, HorizontalValue),
-	write('Move: '),
-	write(move(Number, Letter)),
-	write(' Vertical: '),
-	write(VerticalValue),
-	write(' Up: '),
-	write(Up),
-	write(' Down: '),
-	write(Down),
-	write(' Horizontal: '),
-	write(HorizontalValue),
-	write(' Left: '),
-	write(Left),
-	write(' Right: '),
-	write(Right),
-	write(' Value: '),
-	write(Value),
-	nl,
 	!.
 
 

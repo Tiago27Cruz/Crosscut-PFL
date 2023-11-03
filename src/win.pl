@@ -46,7 +46,6 @@ check_vertical_win_aux([Head|Tail], Letter, N, N1, _, Height):-
 
 check_horizontal_win(Board, Number, Length, Height):-
 	Pos is Height-Number,
-	write(Pos),
 	nth0(Pos, Board, Row),
 	nth1(1, Row, N),
 	check_horizontal_win_aux(Row, N, 0, Length).

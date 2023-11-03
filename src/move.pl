@@ -119,20 +119,20 @@ change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc,Bypass):-
 	append(Saved, [Head], Saved1),
 	change_piece_in_line_aux(Tail,L,CurPos1,Saved1,Piece,Acc,Bypass).
 
-change_piece_in_line_aux([],_,_,_,_,_,_):-
+change_piece_in_line_aux([],_,_,_,_,_,0):-
 	get_game_state(state(Turn,_,_,_,_,_)),
 	is_odd(Turn),
 	get_player_info(_,Blue),
 	Blue < 2,
-	write('Wrong Input\n'),
+	write('Invalid Input\n'),
 	!,
 	fail.
-change_piece_in_line_aux([],_,_,_,_,_,_):-
+change_piece_in_line_aux([],_,_,_,_,_,0):-
 	get_game_state(state(Turn,_,_,_,_,_)),
 	is_even(Turn),
 	get_player_info(Red,_),
 	Red < 2,
-	write('Wrong Input\n'),
+	write('Invalid Input\n'),
 	!,
 	fail.
 change_piece_in_line_aux([],_,_,_,_,_,_):-
