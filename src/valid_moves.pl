@@ -3,10 +3,13 @@
 % --------------------------------------------------------
 
 % valid_moves(+GameState, +Player, -ListOfMoves)
+% Returns a list of valid moves for the Player in the current GameState
 valid_moves(state(_,_,_,Board,Height,Length), Player, ListOfMoves):-
     valid_moves_column(Board, Height, Length, Player, 1, [], ListOfMoves),
     !.
 
+% valid_moves_column(+Board, +Height, +Length, +Player, +Number, +List, -ListOfMoves)
+% Goes through all the columns of the board and calls valid_moves_row to go through all the rows so it can validate every possible move.
 valid_moves_column(Board, Height, Length, Player, Number, List, ListOfMoves):-
     Number =< Height,
     Number >= 1,
