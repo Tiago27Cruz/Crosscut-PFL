@@ -126,7 +126,7 @@ play_again('n'):-
 % ----------------- Board Generation ---------------------
 % --------------------------------------------------------
 
-initial_state(size(Height, Length), state(0, 0, 0, Board, Height, Length)) :-
+initial_state(size(Height, Length), state(0, _, _, Board, Height, Length)) :-
     create_board(Board, Height, Length, []).
 
 create_board(Board, 0, _, Board).

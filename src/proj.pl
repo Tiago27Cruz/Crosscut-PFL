@@ -58,7 +58,7 @@ initialize_game_state:-
 	write('1 - Human [write 1]\n'),
 	write('2 - Easy Computer [write 2]\n'),
 	write('3 - Hard Computer [write 3]\n'),
-	set_player_info,
+	set_player_info(State),
 	write('------------------Board Dimensions------------------\n\n'),
 	write('Please choose the board dimensions:\n'),
 	get_size(Size),
@@ -74,7 +74,7 @@ update_game_state(State):-
     retract(game_state(_)),
     asserta(game_state(State)).
 
-set_player_info:-
+set_player_info(state(_,Red,Blue,_,_,_)):-
 	repeat,
 	nl,
 	write('Player 1 (Red) is: '),
@@ -94,11 +94,10 @@ set_player_info:-
 	Blue > 0,
 	Blue < 4,
 	nl,
-	asserta(player_info(Red, Blue)),
 	!.
 
 get_player_info(Red, Blue):-
-	player_info(Red, Blue).
+	get_game_state(state(_,Red,Blue,_,_,_)).
 
 	
 % //////////////////// PLAY //////////////////////////
@@ -147,23 +146,25 @@ next_turn(state(Turn, P1, P2, Board, Height, Length), state(NewTurn, P1, P2, Boa
 % ---------------------- Input ---------------------------
 % --------------------------------------------------------
 
-get_input(move(N, L), 'B'):-
-	get_player_info(_, Blue),
-	get_player_input(move(N, L), Blue, 'B'),
+get_input(state(Turn,Red,Blue,Board,Height,Length), move(N, L), 'B'):-
+	get_player_input(move(N, L), state(Turn,Red,Blue,Board,Height,Length), Blue, 'B'),
 	!.
-get_input(move(N, L), 'R'):-
-    get_player_info(Red, _),
-	get_player_input(move(N, L), Red, 'R'),
+get_input(state(Turn,Red,Blue,Board,Height,Length), move(N, L), 'R'):-
+	get_player_input(move(N, L), state(Turn,Red,Blue,Board,Height,Length), Red, 'R'),
     !.
 
-get_player_input(move(N, L), 1, _):-
+get_player_input(move(N, L), _, 1, _):-
 	repeat,
 	get_human_input(move(N, L)),
 	!.
-get_player_input(move(N, L), Mode, Player):-
+get_player_input(move(N, L), _, 1, _):-
+	repeat,
+	get_human_input(move(N, L)),
+	!.
+get_player_input(move(N, L), State, Mode, Player):-
 	repeat,
 	Level is Mode - 1,
-	choose_move(move(N, L), Player, Level),
+	choose_move(State, Player, Level, move(N, L)),
 	!.
 
 get_human_input(move(N, L)):-
@@ -176,33 +177,32 @@ get_human_input(move(N, L)):-
     convert_letter_to_number(ChLetter, L),
 	clear_buffer.
 
-choose_move(move(N, L), Player, 1):-
-	valid_moves(Player, ListOfMoves),
+choose_move(State, Player, 1, Move):-
+	valid_moves(State, Player, ListOfMoves),
 	length(ListOfMoves, Length),
 	random(0, Length, Index) ,
-	nth0(Index, ListOfMoves, move(N,L)),
+	nth0(Index, ListOfMoves, Move),
 	!.
 
 % get all moves and choose the one with the biggest value
-choose_move(Move, Player, 2):-
-	valid_moves(Player, ListOfMoves),
-	get_best_moves(ListOfMoves, Player, 100, [], BestMoves),
+choose_move(State, Player, 2, Move):-
+	valid_moves(State, Player, ListOfMoves),
+	get_best_moves(State, ListOfMoves, Player, 100, [], BestMoves),
 	length(BestMoves, Length),
 	random(0, Length, Index),
 	nth0(Index, BestMoves, Move),
 	!.
 
-get_best_moves([],_,_,BestMoves, BestMoves):-!.
-get_best_moves([Move|Tail], Player, BestValue, CurMoves, BestMoves):-
-    get_game_state(State),
+get_best_moves(_, [],_,_,BestMoves, BestMoves):-!.
+get_best_moves(State, [Move|Tail], Player, BestValue, CurMoves, BestMoves):-
     move(State, Move, PlayedState),
     value(PlayedState, Move, Player, Value),
     Value =< BestValue,
     !,
     get_new_list(BestValue, Value, Move, CurMoves, NewMoves),
-    get_best_moves(Tail, Player, Value, NewMoves, BestMoves).
-get_best_moves([_|Tail], Player, BestValue, CurMoves, BestMoves):-
-    get_best_moves(Tail, Player, BestValue, CurMoves, BestMoves).
+    get_best_moves(State, Tail, Player, Value, NewMoves, BestMoves).
+get_best_moves(State, [_|Tail], Player, BestValue, CurMoves, BestMoves):-
+    get_best_moves(State, Tail, Player, BestValue, CurMoves, BestMoves).
 
 
 get_new_list(BestValue, NewValue, Move, _, [Move]):-

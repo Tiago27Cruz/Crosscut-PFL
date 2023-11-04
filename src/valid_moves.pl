@@ -2,9 +2,8 @@
 % ------------------- Valid Moves ------------------------
 % --------------------------------------------------------
 
-% valid_moves(+Player, -ListOfMoves)
-valid_moves(Player, ListOfMoves):-
-    get_game_state(state(_,_,_,Board,Height,Length)),
+% valid_moves(+GameState, +Player, -ListOfMoves)
+valid_moves(state(_,_,_,Board,Height,Length), Player, ListOfMoves):-
     valid_moves_column(Board, Height, Length, Player, 1, [], ListOfMoves),
     !.
 
