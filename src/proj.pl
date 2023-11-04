@@ -51,7 +51,7 @@ is_odd(N):-
 % state(TurnN, Player1Info, Player2Info, Board, Height, Length).
 
 
-initialize_game_state:-
+initialize_game_state(State):-
 	write('----------------Welcome to Crosscut!----------------\n\n'),
 	write('Please choose who is playing:\n'),
 	write('Options:\n'),
@@ -102,15 +102,15 @@ get_player_info(Red, Blue):-
 	
 % //////////////////// PLAY //////////////////////////
 play:-
-    initialize_game_state,
-    display_game,
+    initialize_game_state(State),
+    display_game(State),
     game_loop,
 	game_over,
 	!.
 
 game_over:-
 	get_game_state(state(Turn,_,_,_,_,_)),
-	is_even(Turn),
+	is_odd(Turn),
 	!,
 	display_finished_game('B').
 game_over:-
@@ -121,19 +121,18 @@ game_over:-
 % --------------------------------------------------------
 
 get_player(state(Turn,_,_,_,_,_), 'R'):-
-	is_even(Turn),
+	is_odd(Turn),
 	!.
 get_player(state(Turn,_,_,_,_,_), 'B'):-
-	is_odd(Turn),
+	is_even(Turn),
 	!.
 
 game_loop:-
 	get_game_state(State),
-	make_play(State, Move, PlayedState),
-	next_turn(PlayedState, NewState),
+	make_play(State, Move, NewState),
 	update_game_state(NewState),
 	check_win(NewState, Move),
-	display_game,
+	display_game(NewState),
 	game_loop,
 	!.
 game_loop:-
@@ -188,6 +187,9 @@ choose_move(State, Player, 1, Move):-
 choose_move(State, Player, 2, Move):-
 	valid_moves(State, Player, ListOfMoves),
 	get_best_moves(State, ListOfMoves, Player, 100, [], BestMoves),
+	write('Best Moves: '),
+	write(BestMoves),
+	nl,
 	length(BestMoves, Length),
 	random(0, Length, Index),
 	nth0(Index, BestMoves, Move),
@@ -211,22 +213,110 @@ get_new_list(BestValue, NewValue, Move, _, [Move]):-
 get_new_list(_, _, Move, CurList, [Move|CurList]):-!.
 
 % Game State Evaluation: describe how to evaluate the game state. The predicate should be called value(+GameState, +Player, -Value).
+
+% Case in which it finds a winning move
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, -100):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	VerticalValue is Height - VerticalSegment - 2,
+	HorizontalValue is Length - HorizontalSegment -2,
+	Value is min(VerticalValue, HorizontalValue),
+	Value =:= 0,
+	!.
+% Case in which it finds a move that will create a segment bigger than the opponent's adjacent longest segment so it will not be flipped if done and may enable a flip for the bot
 value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	get_opponent(Player, Opponent),
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
+	VerticalValue is Height - VerticalSegment - 2,
+	HorizontalValue is Length - HorizontalSegment -2,
+	Value is min(VerticalValue, HorizontalValue),
+	MaxFriendly is max(VerticalSegment, HorizontalSegment),
+	MaxEnemy is max(OpVerticalSegment, OpHorizontalSegment) -1,
+	MaxEnemy > 0,
+	MaxEnemyReal is MaxEnemy + 1, % +1 because it will be flipped 
+	MaxFriendly > MaxEnemyReal,	% if the move is done the enemy will not be able to counter flip
+	!.
+
+% Case in which it has no adjacent enemy segments so it will value a move who is a diagonal of a enemy segment so it may flip that segment in the future
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	get_opponent(Player, Opponent),
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
+	VerticalValue is Height - VerticalSegment - 2,
+	HorizontalValue is Length - HorizontalSegment -2,
+	TempValue is min(VerticalValue, HorizontalValue),
+	MaxEnemy is max(OpVerticalSegment, OpHorizontalSegment),
+	MaxEnemyWithoutPiece is MaxEnemy - 1,
+	MaxEnemyWithoutPiece =:= 0,
+	check_diagonal_enemy(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, Result),
+	Result > 0,
+	Value is TempValue - 1,
+	!.
+
+% Case that gives away a flip to the opponent
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, 100):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	get_opponent(Player, Opponent),
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
+	MaxFriendly is max(VerticalSegment, HorizontalSegment),
+	MaxEnemy is max(OpVerticalSegment, OpHorizontalSegment),
+	MaxEnemyWithoutPiece is MaxEnemy - 1,
+	MaxEnemyWithoutPiece > 0,
+	MaxEnemyReal is MaxEnemy + 1,
+	MaxEnemyReal >= MaxFriendly,
+	IsWinning is Height - MaxEnemyReal - 2,
+	IsWinning =:= 0,
+	!.
+% Base case in which it adds the length of the enemy's adjacent longest segment to the value so it chooses the one where the enemy has the smallest adjacent segment
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	get_opponent(Player, Opponent),
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
+	!,
+	VerticalValue is Height - VerticalSegment - 2 + OpVerticalSegment,
+	HorizontalValue is Length - HorizontalSegment -2 + OpHorizontalSegment,
+	Value is min(VerticalValue, HorizontalValue),
+	!.
+
+% get_new_segments_length(+GameState, +Move, +Player, -VerticalSegment, -HorizontalSegment)
+% Calculates the length of the new segments that will be created by the move
+get_segments_length(state(_,_,_,Board,Height,Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment):-
 	reverse(Board, ReversedBoard),
 	count_up(ReversedBoard, Number, Letter, Height, Player, Player, -1, Up),
 	count_down(ReversedBoard, Number, Letter, Player, Player, 0, Down),
 	VerticalSegment is Up + Down,
-	VerticalValue is Height - VerticalSegment -2,
 	Pos is Height - Number + 1,
 	nth1(Pos, Board, Row),
 	count_left(Row, Letter, Player, Player, -1, Left),
 	count_right(Row, Letter, Length, Player, Player, 0, Right),
-	HorizontalSegment is Left + Right,
-	HorizontalValue is Length - HorizontalSegment -2,
-	Value is min(VerticalValue, HorizontalValue),
-	!.
+	HorizontalSegment is Left + Right.
 
+% Checks if the move is a diagonal of an enemy segment 
+check_diagonal_enemy(state(_,_,_,Board,Height,_), move(Number, Letter), Player, Result):-
+	Pos is Height - Number + 1,
+	PosAbove is Pos - 1,
+	PosBelow is Pos + 1,
+	nth1(PosAbove, Board, RowAbove),
+	nth1(PosBelow, Board, RowBelow),
+	PosRight is Letter + 1,
+	PosLeft is Letter - 1,
+	nth1(PosRight, RowAbove, Elem1),
+	nth1(PosLeft, RowAbove, Elem2),
+	nth1(PosRight, RowBelow, Elem3),
+	nth1(PosLeft, RowBelow, Elem4),
+	check_piece(Elem1, Player, Result1),
+	check_piece(Elem2, Player, Result2),
+	check_piece(Elem3, Player, Result3),
+	check_piece(Elem4, Player, Result4),
+	Result is Result1 + Result2 + Result3 + Result4.
 
+check_piece(Piece, Piece, 1):-!.
+check_piece(_, _, 0):-!.
+
+% get_opponent(+Player, -Opponent)
+% Returns the opponent of the given player
+get_opponent('R', 'B').
+get_opponent('B', 'R').
 
 :- dynamic game_state/1.
 :- dynamic player_info/2.

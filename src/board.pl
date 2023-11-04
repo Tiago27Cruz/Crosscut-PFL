@@ -80,11 +80,9 @@ print_board_turn(Turn):-
 	nl,
 	write('-----> Blue\'s Turn\n').
 
-display_game:-
-	get_game_state(state(Turn, _, _, Board,H,L)),
+display_game(state(Turn, _, _, Board,H,L)):-
 	nl,
-	DisplayTurn is Turn + 1,
-	print_board_turn(DisplayTurn),
+	print_board_turn(Turn),
 	display_board(state(_, _, _, Board,H,L)),
     !.
 
@@ -126,7 +124,7 @@ play_again('n'):-
 % ----------------- Board Generation ---------------------
 % --------------------------------------------------------
 
-initial_state(size(Height, Length), state(0, _, _, Board, Height, Length)) :-
+initial_state(size(Height, Length), state(1, _, _, Board, Height, Length)) :-
     create_board(Board, Height, Length, []).
 
 create_board(Board, 0, _, Board).

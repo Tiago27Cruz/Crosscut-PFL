@@ -6,7 +6,8 @@ make_play(State, Move, NewState):-
 	get_player(State, Player),
 	repeat,
     get_input(State, Move, Player),
-	move(State, Move, NewState),
+	move(State, Move, MovedState),
+	next_turn(MovedState, NewState),
 	!.
 
 % move(+GameState, +Move, -NewGameState)
@@ -46,14 +47,14 @@ make_move_aux([Head|Tail],N,L,CurPos,Saved,Piece,Acc,Bypass):-
 
 make_move_aux([],_,_,_,_,_,_,_):-
 	get_game_state(state(Turn,Red,_,_,_,_)),
-	is_even(Turn),
+	is_odd(Turn),
 	Red < 2,
 	write('Invalid Input\n'),
 	!,
 	fail.
 make_move_aux([],_,_,_,_,_,_,_):-
 	get_game_state(state(Turn,_,Blue,_,_,_)),
-	is_odd(Turn),
+	is_even(Turn),
 	Blue < 2,
 	write('Invalid Input\n'),
 	!,
@@ -71,14 +72,14 @@ change_piece_in_line(Line,L,Row,Piece,Bypass):-
 
 change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
 	get_game_state(state(Turn,Red,_,_,_,_)),
-	is_even(Turn),
+	is_odd(Turn),
 	Red < 2,
 	write('A Red piece is already here!\n'),
 	!,
 	fail.
 change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
 	get_game_state(state(Turn,_,Blue,_,_,_)),
-	is_odd(Turn),
+	is_even(Turn),
 	Blue < 2,
 	write('A Red piece is already here!\n'),
 	!,
@@ -88,14 +89,14 @@ change_piece_in_line_aux(['R'|_],L,L,_,_,_,0):-
 	fail.
 change_piece_in_line_aux(['B'|_],L,L,_,_,_,0):-
 	get_game_state(state(Turn,Red,_,_,_,_)),
-	is_even(Turn),
+	is_odd(Turn),
 	Red < 2,
 	write('A Blue piece is already here!\n'),
 	!,
 	fail.
 change_piece_in_line_aux(['B'|_],L,L,_,_,_,0):-
 	get_game_state(state(Turn,_,Blue,_,_,_)),
-	is_odd(Turn),
+	is_even(Turn),
 	Blue < 2,
 	write('A Blue piece is already here!\n'),
 	!,
@@ -115,14 +116,14 @@ change_piece_in_line_aux([Head|Tail],L,CurPos,Saved,Piece,Acc,Bypass):-
 
 change_piece_in_line_aux([],_,_,_,_,_,0):-
 	get_game_state(state(Turn,_,Blue,_,_,_)),
-	is_odd(Turn),
+	is_even(Turn),
 	Blue < 2,
 	write('Invalid Input\n'),
 	!,
 	fail.
 change_piece_in_line_aux([],_,_,_,_,_,0):-
 	get_game_state(state(Turn,Red,_,_,_,_)),
-	is_even(Turn),
+	is_odd(Turn),
 	Red < 2,
 	write('Invalid Input\n'),
 	!,
