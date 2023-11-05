@@ -133,7 +133,8 @@ check_prohibited_vertical_flip(Board, [Head|Tail], Letter, FlipSize):-
     check_prohibited_vertical_flip(Board, Tail, Letter, FlipSize).
 
 
-count_left(_, 1, Piece, Piece, Count, Count):-!.
+count_left(_, 1, _, _, -1, 0):-!.
+count_left(_, 1, _, _, Count, Count):-!.
 
 count_left(Row, CurPos, Piece, Piece, Count, Final):-
     Count1 is Count + 1,
@@ -145,6 +146,7 @@ count_left(_, _, N, Piece, Count, Count):-
     N \= Piece.
 
 
+count_right(_, Length, Length, Piece, Piece, -1, 0):-!.
 count_right(_, Length, Length, Piece, Piece, Count, Count):-!.
 
 count_right(Row, CurPos, Length, Piece, Piece, Count, Final):-
@@ -161,7 +163,7 @@ count_right(_, _, _, N, Piece, Count, Count):-
 % ----------------- Horizontal Flip ----------------------
 % --------------------------------------------------------
 
-try_to_flip_horizontal(Number, Letter, Board, Piece, NewBoard):- % board is not flipped
+try_to_flip_horizontal(Number, Letter, Board, Piece, NewBoard):- % board is not reversed
 	get_game_state(state(_,_,_,_,Height,Length)),
     Pos is Height - Number + 1,
     nth1(Pos, Board, Row),
@@ -177,21 +179,21 @@ validate_horizontal_flipping(Board, Row, Number, Height, Length, Piece, NewBoard
 	Pos is Height - Number + 1,
     nth1(Pos, NewBoard, FlippedRow),
 	count_new_friendly_horizontal_segment(List, FlippedRow, Length, Piece, FriendlySegment),
-	check_prohibited_horizontal_flip(Board, List, Row, Number, FriendlySegment),
+	check_prohibited_horizontal_flip(Board, List, Row, Pos, FriendlySegment),
 	!.
 validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, _, ListRight, _):-
 	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, ListRight),
 	Pos is Height - Number + 1,
     nth1(Pos, NewBoard, FlippedRow),
 	count_new_friendly_horizontal_segment(ListRight, FlippedRow, Length, Piece, FriendlySegment),
-	check_prohibited_horizontal_flip(Board, ListRight, Row, Number, FriendlySegment),
+	check_prohibited_horizontal_flip(Board, ListRight, Row, Pos, FriendlySegment),
 	!.
 validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, _, _, ListLeft):-
 	flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, ListLeft),
 	Pos is Height - Number + 1,
     nth1(Pos, NewBoard, FlippedRow),
 	count_new_friendly_horizontal_segment(ListLeft, FlippedRow, Length, Piece, FriendlySegment),
-	check_prohibited_horizontal_flip(Board, ListLeft, Row, Number, FriendlySegment),
+	check_prohibited_horizontal_flip(Board, ListLeft, Row, Pos, FriendlySegment),
 	!.
 
 
@@ -216,7 +218,8 @@ get_flip_list_horizontal(Row, 1, Piece, Length, ListRight, []):-
 get_flip_list_horizontal(Row, Length, Piece, Length, [], ListLeft):-
 	PosLeft is Length - 1,
 	nth1(PosLeft, Row, N1),
-	check_left(Row, PosLeft, N1, Piece, [], ListLeft).
+	check_left(Row, PosLeft, N1, Piece, [], ListLeft),
+	!.
 
 get_flip_list_horizontal(Row, Letter, Piece, Length, ListRight, ListLeft):-
 	PosRight is Letter + 1,
@@ -264,6 +267,7 @@ check_prohibited_horizontal_flip(Board, [Letter|Tail], Row, Number, FlipSize):-
     check_prohibited_horizontal_flip(Board, Tail, Row, Number, FlipSize).
 
 
+count_up(_, Height, _, Height, Piece, Piece, -1, 0):-!.
 count_up(_, Height, _, Height, Piece, Piece, Count, Count):-!.
 
 count_up(Board, CurPos, Letter, Height, Piece, Piece, Count, Final):-
@@ -276,6 +280,8 @@ count_up(Board, CurPos, Letter, Height, Piece, Piece, Count, Final):-
 count_up(_, _, _, _, N, Piece, Count, Count):-
     N \= Piece.
 
+
+count_down(_, 1, _, _, _, -1, 0):-!.
 count_down(_, 1, _, _, _, Count, Count):-!.
 count_down(Board, CurPos, Letter, Piece, Piece, Count, Final):-
     Count1 is Count + 1,

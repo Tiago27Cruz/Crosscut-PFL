@@ -226,39 +226,46 @@ get_new_list(_, _, Move, CurList, [Move|CurList]):-!.
 value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, -100):-
 	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
 	VerticalValue is Height - VerticalSegment - 2,
-	HorizontalValue is Length - HorizontalSegment -2,
+	HorizontalValue is Length - HorizontalSegment - 2,
 	Value is min(VerticalValue, HorizontalValue),
 	Value =:= 0,
 	!.
+
+% case where the opponent will flip the whole thing and win (horizontal) [x,B,B,B,*B*,R,x]
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, 100):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	get_opponent(Player, Opponent),
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, _, OpHorizontalSegment),
+	OpHorizontalSegment > 1, % opponent has a segment adjacent to the move on the horizontal ( >1 because it counts with my piece)
+	FutureFlip is OpHorizontalSegment + HorizontalSegment - 1, % Future flip would be the result of the whole flipped segment -1 because is repetition
+	FutureFlip > VerticalSegment,
+	!.
+
+% case where the opponent will flip the whole thing and win (vertical)
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, 100):-
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
+	get_opponent(Player, Opponent),
+	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, _),
+	OpVerticalSegment > 1, % opponent has a segment adjacent to the move on the horizontal ( >1 because it counts with my piece)
+	FutureFlip is OpVerticalSegment + VerticalSegment - 1, % Future flip would be the result of the whole flipped segment -1 because is repetition
+	FutureFlip > HorizontalSegment,
+	!.
+
 % Case in which it finds a move that will create a segment bigger than the opponent's adjacent longest segment so it will not be flipped if done and may enable a flip for the bot
 value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
 	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
 	get_opponent(Player, Opponent),
 	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
 	VerticalValue is Height - VerticalSegment - 2,
-	HorizontalValue is Length - HorizontalSegment -2,
+	HorizontalValue is Length - HorizontalSegment - 2,
 	Value is min(VerticalValue, HorizontalValue),
 	MaxFriendly is max(VerticalSegment, HorizontalSegment),
-	MaxEnemy is max(OpVerticalSegment, OpHorizontalSegment) -1,
+	MaxEnemy is max(OpVerticalSegment, OpHorizontalSegment) - 1,
 	Number1 is Number + 1, % gets adjacent pieces
 	Letter1 is Letter + 1, % gets adjacent pieces
 	is_an_edge(move(Number1, Letter1), Height, Length, Result),
 	MaxEnemyReal is MaxEnemy + 2 - Result, % +2 because the piece will be flipped so its the enemy's piece + the one it just put, - result so if its an edge it will only add 1 to the enemy's segment
 	MaxFriendly > MaxEnemyReal, % if the move is done the enemy will be able to counter flip
-	!.
-
-% When in the second turn, the best play possible is to block 2 edges of the opponent's segment by placing your piece on a diagonal
-value(state(2, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
-	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
-	get_opponent(Player, Opponent),
-	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
-	VerticalValue is Height - VerticalSegment - 2,
-	HorizontalValue is Length - HorizontalSegment -2,
-	Value is min(VerticalValue, HorizontalValue),
-	MaxEnemy is max(OpVerticalSegment, OpHorizontalSegment) - 1,
-	MaxEnemy =:= 0,
-	check_diagonal_enemy(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, Result),
-	Result > 0,
 	!.
 
 % Case that gives away a flip to the opponent
@@ -276,25 +283,39 @@ value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, 100):
 	MaxEnemyReal > MaxFriendly, % if the move is done the enemy will be able to counter flip
 	!.
 
-% case where the opponent will flip the whole thing and win (horizontal) [x,B,B,B,*B*,R,x]
-value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, 100):-
-	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
-	get_opponent(Player, Opponent),
-	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, _, OpHorizontalSegment),
-	OpHorizontalSegment > 1, % opponent has a segment adjacent to the move on the horizontal ( >1 because it counts with my piece)
-	FutureFlip is OpHorizontalSegment + HorizontalSegment - 1, % Future flip would be the result of the whole flipped segment -1 because is repetition
-	FutureFlip > VerticalSegment,
-	!.
 
-% case where the opponent will flip the whole thing and win (vertical) 
-value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, 100):-
+% A valuable play would be to block an opponents segment by leaving an empty space between their segment and a new
+% 1. Ver se tem um X adjacente
+% 2. Ver se o X adjacente tem um segmento adjacente no sentido em q esse x é adjacente à peça
+% 3. Subtrair ao value o valor do segmento adjacente do inimigo
+value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
 	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment),
 	get_opponent(Player, Opponent),
-	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, _),
-	OpVerticalSegment > 1, % opponent has a segment adjacent to the move on the horizontal ( >1 because it counts with my piece)
-	FutureFlip is OpVerticalSegment + VerticalSegment - 1, % Future flip would be the result of the whole flipped segment -1 because is repetition
-	FutureFlip > HorizontalSegment,
-	!.
+	% get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
+	Pos is Height - Number + 1,
+    Up is Pos + 1,
+    Down is Pos - 1,
+    Left is Letter - 1,
+    Right is Letter + 1,
+    nth1(Pos, Board, Row),
+    nth1(Up, Board, UpRow),
+    nth1(Down, Board, DownRow),
+    nth1(Right, Row, RightVal),
+    nth1(Left, Row, LeftVal),
+    nth1(Letter, UpRow, UpVal),
+    nth1(Letter, DownRow, DownVal),
+    Up1 is Number + 1,
+    Down1 is Number - 1,
+    is_x(RightVal,state(_, _, _, Board, Height, Length), move(Number, Right), Opponent, _, RightHorizontal),
+    is_x(LeftVal,state(_, _, _, Board, Height, Length), move(Number, Left), Opponent, _, LeftHorizontal),
+    is_x(UpVal,state(_, _, _, Board, Height, Length), move(Up1, Letter), Opponent, UpVertical, _),
+    is_x(DownVal,state(_, _, _, Board, Height, Length), move(Down1, Letter), Opponent, DownVertical,_),
+    ValueHorizontal is Length - HorizontalSegment - RightHorizontal - LeftHorizontal,
+    ValueVertical is Height - VerticalSegment - UpVertical - DownVertical,
+    Value is min(ValueHorizontal, ValueVertical),
+    !.
+    % Row, Pos(x), Length, Opponent, Opponent, -1, Count
+
 
 % Base case in which it adds the length of the enemy's adjacent longest segment to the value so it chooses the one where the enemy has the smallest adjacent segment (or none at all)
 value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value):-
@@ -303,7 +324,7 @@ value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value
 	get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, OpVerticalSegment, OpHorizontalSegment),
 	!,
 	VerticalValue is Height - VerticalSegment - 2 + OpVerticalSegment,
-	HorizontalValue is Length - HorizontalSegment -2 + OpHorizontalSegment,
+	HorizontalValue is Length - HorizontalSegment - 2 + OpHorizontalSegment,
 	Value is min(VerticalValue, HorizontalValue),
 	!.
 
@@ -312,13 +333,13 @@ value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value
 get_segments_length(state(_,_,_,Board,Height,Length), move(Number, Letter), Player, VerticalSegment, HorizontalSegment):-
 	reverse(Board, ReversedBoard),
 	count_up(ReversedBoard, Number, Letter, Height, Player, Player, -1, Up),
-	count_down(ReversedBoard, Number, Letter, Player, Player, 0, Down),
-	VerticalSegment is Up + Down,
+	count_down(ReversedBoard, Number, Letter, Player, Player, -1, Down),
+	VerticalSegment is Up + Down + 1,
 	Pos is Height - Number + 1,
 	nth1(Pos, Board, Row),
 	count_left(Row, Letter, Player, Player, -1, Left),
-	count_right(Row, Letter, Length, Player, Player, 0, Right),
-	HorizontalSegment is Left + Right.
+	count_right(Row, Letter, Length, Player, Player, -1, Right),
+	HorizontalSegment is Left + Right + 1.
 
 % Checks if the move is a diagonal of an enemy segment 
 check_diagonal_enemy(state(_,_,_,Board,Height,_), move(Number, Letter), Player, Result):-
@@ -357,6 +378,12 @@ is_an_edge(move(_, Letter), _, Letter, 1).
 is_an_edge(move(2,_),_,_, 1).
 is_an_edge(move(_,2),_,_, 1).
 is_an_edge(_, _, _, 0).
-	
+
+
+is_x(x, state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, VerticalSegment, HorizontalSegment):-
+    get_segments_length(state(_, _, _, Board, Height, Length), move(Number, Letter), Opponent, VerticalSegment, HorizontalSegment),
+    !.
+is_x(_, _, _, 0).
+
 :- dynamic game_state/1.
 :- dynamic player_info/2.

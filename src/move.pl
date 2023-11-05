@@ -4,10 +4,19 @@
 
 make_play(State, Move, NewState):-
 	get_player(State, Player),
+	%valid_moves(State, Player, ListOfMoves),
+	%length(ListOfMoves, Len),
+	%Len > 0,
 	repeat,
     get_input(State, Move, Player),
 	move(State, Move, MovedState),
 	next_turn(MovedState, NewState),
+	!.
+make_play(State, move(1,1), NewState):-
+	get_player(State, Player),
+	valid_moves(State, Player, ListOfMoves),
+	ListOfMoves =< 0,
+	next_turn(State, NewState),
 	!.
 
 % move(+GameState, +Move, -NewGameState)
