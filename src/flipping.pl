@@ -2,7 +2,7 @@
 % ------------------------ Flip --------------------------
 % --------------------------------------------------------
 
-% flip_pieces(+Letter, +Number, +Direction, +Board, +Piece, -NewBoard, +List)
+
 flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List):-
 	flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, List).
 flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List):-
@@ -10,10 +10,10 @@ flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List):-
 
 flip_pieces_aux(_, _, Board, _, Board, []):-!.
 flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, [Head|Tail]):-
-	make_move(Board,Head,Letter,Piece,ChangedBoard,1),
+	make_move(Board,Head,Letter,Piece,ChangedBoard,1,1),
 	flip_pieces_aux(Letter, 'Vertical', ChangedBoard, Piece, NewBoard, Tail).
 flip_pieces_aux(Number, 'Horizontal', Board, Piece, NewBoard, [Head|Tail]):-
-	make_move(Board,Number,Head,Piece,ChangedBoard,1),
+	make_move(Board,Number,Head,Piece,ChangedBoard,1,1),
 	flip_pieces_aux(Number, 'Horizontal', ChangedBoard, Piece, NewBoard, Tail).
 
 % --------------------------------------------------------

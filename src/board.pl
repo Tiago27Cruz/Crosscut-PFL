@@ -121,21 +121,21 @@ display_board(state(_, _, _, Board,H,L)):-
 % display_finished_game(+Winner)
 % Displays the fact that the game is over, it's winner, the final board and asks if the player wants to play again
 display_finished_game(Winner):-
-	get_game_state(state(_, _, _, Board,H,L)),
+	get_game_state(state(_, _, _, Board,H,L)), % get's the final game state
 	nl,
 	write('------------------------Game Over---------------------\n\n'),
 	write('-----> Winner: '),
-	write_winner(Winner),
+	write_winner(Winner), % writes the correct winner
 	nl,
 	nl,
-	display_board(state(_, _, _, Board,H,L)),
+	display_board(state(_, _, _, Board,H,L)), % display the final board
 	nl,
 	write('-----> Play Again? (y/n)\n'),
 	repeat,
 	peek_char(Ch),
 	get_char_not_nl(Ch,ChLetter),
 	clear_buffer,
-	play_again(ChLetter),
+	play_again(ChLetter), % validates if the player wants to play again
 	!.
 
 % write_winner(+Winner)
@@ -155,6 +155,38 @@ play_again('y'):-
 % Invalid Case. Quit the game
 play_again('n'):-
 	write('\nThanks for playing!\n').
+
+% display_move(+GameState, +Move)
+% Displays the move that was played by a bot
+% Blue bot played
+display_move(state(Turn,_,Blue,_,_,_), move(Number, Letter)):-
+	is_odd(Turn), % it's changed because turn's value is already updated
+	Blue > 1, % if it's not a player
+	nl,
+	write('-----> Blue bot played '),
+	convert_number_to_letter(Letter, LetterChar), % convert the number to the letter
+	put_code(LetterChar), % print the letter with it's ascii number
+	write(Number),
+	nl,
+	nl,
+	write('-----> Press ENTER to continue!\n'),
+	get_char(_),
+	nl.
+% Red bot played
+display_move(state(Turn,Red,_,_,_,_), move(Number, Letter)):-
+	is_even(Turn), % it's changed because turn's value is already updated
+	Red > 1, % if it's not a player
+	nl,
+	write('-----> Red bot played '),
+	convert_number_to_letter(Letter, LetterChar), % convert the number to the letter
+	put_code(LetterChar), % print the letter with it's ascii number
+	write(Number),
+	nl,
+	nl,
+	write('-----> Press ENTER to continue!\n'),
+	get_char(_),
+	nl.
+display_move(_,_).
 
 % --------------------------------------------------------
 % ----------------- Board Generation ---------------------
@@ -177,7 +209,7 @@ create_board(Board, Height, Length, Acc) :-
     create_board(Board, Height1, Length, [Row | Acc]).
 % create_row(+Lenght, -Row)
 % Creates a row
-% Finished creating the row so it returns the row
+% Finished creating the row so it returns the row. Creates it in the recursive call
 create_row(0, []).
 create_row(Length, [x | Tail]) :-
     Length > 0,
@@ -222,3 +254,4 @@ get_size(size(Height, Length)):-
 	get_height(size(Height,_)),
 	get_length(size(_,Length)),
 	!.
+

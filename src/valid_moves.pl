@@ -25,7 +25,7 @@ valid_moves_column(_,_,_,_,_,List,List):-
 valid_moves_row(Board, Length, Letter, Number, Height, Player, List, Acc):-
     Letter =< Length,
     Letter >= 1,
-    make_move(Board, Number, Letter, Player, MovedBoard, 0),
+    make_move(Board, Number, Letter, Player, MovedBoard, 0,1),
     validate_move(Letter, Length, Number, Height, MovedBoard, NewBoard, Player),
     Board \= NewBoard,
     !,
@@ -50,7 +50,7 @@ valid_moves_row(_,_,_,_,_,_,List,List):-
 validate_move(1,_,Number,_,Board, NewBoard, Player):-
 	try_to_flip_horizontal(Number, 1, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
-	make_move(FlippedBoard,Number,1,x,NewBoard,1),
+	make_move(FlippedBoard,Number,1,x,NewBoard,1,1),
 	!.
 
 validate_move(1,_,_,_,Board,Board,_):-
@@ -60,7 +60,7 @@ validate_move(1,_,_,_,Board,Board,_):-
 validate_move(Letter,_,1,_,Board, NewBoard, Player):-
 	try_to_flip_vertical(Letter, 1, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
-	make_move(FlippedBoard,1,Letter,x,NewBoard,1),
+	make_move(FlippedBoard,1,Letter,x,NewBoard,1,1),
 	!.
 
 validate_move(_,_,1,_,Board, Board,_):-
@@ -70,7 +70,7 @@ validate_move(_,_,1,_,Board, Board,_):-
 validate_move(Letter,Letter,Number,_,Board, NewBoard, Player):-
 	try_to_flip_horizontal(Number, Letter, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
-	make_move(FlippedBoard,Number,Letter,x,NewBoard,1),
+	make_move(FlippedBoard,Number,Letter,x,NewBoard,1,1),
 	!.
 
 validate_move(Letter,Letter,_,_,Board, Board, _):-
@@ -80,7 +80,7 @@ validate_move(Letter,Letter,_,_,Board, Board, _):-
 validate_move(Letter,_,Number,Number, Board, NewBoard, Player):-
 	try_to_flip_vertical(Letter, Number, Board, Player, FlippedBoard),
 	FlippedBoard \= Board,
-	make_move(FlippedBoard,Number,Letter,x,NewBoard,1),
+	make_move(FlippedBoard,Number,Letter,x,NewBoard,1,1),
 	!.
 
 validate_move(_,_,Number,Number, Board, Board, _):-
