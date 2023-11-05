@@ -156,10 +156,10 @@ value(state(_, _, _, Board, Height, Length), move(Number, Letter), Player, Value
     nth1(Pos, Board, Row),
     nth1(Up, Board, UpRow),
     nth1(Down, Board, DownRow),
-    nth1(Right, Row, RightVal),
-    nth1(Left, Row, LeftVal),
-    nth1(Letter, UpRow, UpVal),
-    nth1(Letter, DownRow, DownVal),
+    nth1(Right, Row, RightVal), % Piece to the right of the one just placed
+    nth1(Left, Row, LeftVal), % Piece to the left of the one just placed
+    nth1(Letter, UpRow, UpVal), % Piece above the one just placed
+    nth1(Letter, DownRow, DownVal), % Piece below the one just placed
     Up1 is Number + 1,
     Down1 is Number - 1,
     is_x(RightVal,state(_, _, _, Board, Height, Length), move(Number, Right), Opponent, _, RightHorizontal), % checks if it's an x and returns the value of the segment adjacent to the move
@@ -194,25 +194,6 @@ get_segments_length(state(_,_,_,Board,Height,Length), move(Number, Letter), Play
 	count_left(Row, Letter, Player, Player, -1, Left),
 	count_right(Row, Letter, Length, Player, Player, -1, Right),
 	HorizontalSegment is Left + Right + 1.
-
-% Checks if the move is a diagonal of an enemy segment 
-check_diagonal_enemy(state(_,_,_,Board,Height,_), move(Number, Letter), Player, Result):-
-	Pos is Height - Number + 1,
-	PosAbove is Pos - 1,
-	PosBelow is Pos + 1,
-	nth1(PosAbove, Board, RowAbove),
-	nth1(PosBelow, Board, RowBelow),
-	PosRight is Letter + 1,
-	PosLeft is Letter - 1,
-	nth1(PosRight, RowAbove, Elem1),
-	nth1(PosLeft, RowAbove, Elem2),
-	nth1(PosRight, RowBelow, Elem3),
-	nth1(PosLeft, RowBelow, Elem4),
-	check_piece(Elem1, Player, Result1),
-	check_piece(Elem2, Player, Result2),
-	check_piece(Elem3, Player, Result3),
-	check_piece(Elem4, Player, Result4),
-	Result is Result1 + Result2 + Result3 + Result4.
 
 % check_piece(+Piece, +Player, -Result)
 % Checks if the piece is a player piece, result is 1 if it is, 0 otherwise

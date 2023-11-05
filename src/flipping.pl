@@ -3,31 +3,34 @@
 % --------------------------------------------------------
 
 
-flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, List):-
-	flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, List).
-flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, List):-
-	flip_pieces_aux(Number, 'Horizontal', Board, Piece, NewBoard, List).
-
-flip_pieces_aux(_, _, Board, _, Board, []):-!.
-flip_pieces_aux(Letter, 'Vertical', Board, Piece, NewBoard, [Head|Tail]):-
-	make_move(Board,Head,Letter,Piece,ChangedBoard,1,1),
-	flip_pieces_aux(Letter, 'Vertical', ChangedBoard, Piece, NewBoard, Tail).
-flip_pieces_aux(Number, 'Horizontal', Board, Piece, NewBoard, [Head|Tail]):-
-	make_move(Board,Number,Head,Piece,ChangedBoard,1,1),
-	flip_pieces_aux(Number, 'Horizontal', ChangedBoard, Piece, NewBoard, Tail).
+% flip_pieces(+Letter, +Direction, +Board, +Piece, -NewBoard, +List)
+% flip_pieces(+Number, +Direction, +Board, +Piece, -NewBoard, +List)
+% Receives a letter or a number, depending on the direction and flips every piece on the given List. Returns the NewBoard with the pieces flipped.
+% When it finishes going through the list, returns the new board
+flip_pieces(_, _, Board, _, Board, []):-!.
+% Vertical flip
+flip_pieces(Letter, 'Vertical', Board, Piece, NewBoard, [Head|Tail]):-
+	make_move(Board,Head,Letter,Piece,ChangedBoard,1,1), % Calls make_move with bypass and silent on so it may change pieces already placed and not print anything
+	flip_pieces(Letter, 'Vertical', ChangedBoard, Piece, NewBoard, Tail). % Recursive call to flip the next piece
+% Horizontal flip
+flip_pieces(Number, 'Horizontal', Board, Piece, NewBoard, [Head|Tail]):-
+	make_move(Board,Number,Head,Piece,ChangedBoard,1,1), % Calls make_move with bypass and silent on so it may change pieces already placed and not print anything
+	flip_pieces(Number, 'Horizontal', ChangedBoard, Piece, NewBoard, Tail). % Recursive call to flip the next piece
 
 % --------------------------------------------------------
 % ------------------ Vertical Flip -----------------------
 % --------------------------------------------------------
 
-try_to_flip_vertical(Letter, Number, Board, Piece, NewBoard):-
-	get_game_state(state(_, _, _, _, Height, _)),
-	reverse(Board, ReversedBoard),
+% try_to_flip_vertical(+Letter, +Number, +Board, +Piece, -NewBoard, +Height)
+% Receives a letter and a number and tries to flip the pieces vertically. Returns the NewBoard with the pieces flipped.
+% Case where the it flips the pieces vertically
+try_to_flip_vertical(Letter, Number, Board, Piece, NewBoard, Height):-
+	reverse(Board, ReversedBoard), % Reverses the board so it can be used in the check_if_can_flip_vertical predicate
 	check_if_can_flip_vertical(ReversedBoard, Letter,Number, Piece, ListAbove, ListBelow, Height),
 	append(ListAbove, ListBelow, List),
 	List \= [],
 	validate_vertical_flipping(Board, Letter, Height, Piece, NewBoard, List, ListAbove, ListBelow).
-try_to_flip_vertical(_,_, Board, _, Board):-
+try_to_flip_vertical(_,_, Board, _, Board,_):-
     !,
     fail.
 
@@ -163,14 +166,13 @@ count_right(_, _, _, N, Piece, Count, Count):-
 % ----------------- Horizontal Flip ----------------------
 % --------------------------------------------------------
 
-try_to_flip_horizontal(Number, Letter, Board, Piece, NewBoard):- % board is not reversed
-	get_game_state(state(_,_,_,_,Height,Length)),
+try_to_flip_horizontal(Number, Letter, Board, Piece, NewBoard, Height, Length):- % board is not reversed
     Pos is Height - Number + 1,
     nth1(Pos, Board, Row),
 	check_if_can_flip_horizontal(Row, Letter, Length, Piece, ListRight, ListLeft),
 	append(ListRight, ListLeft, List),
 	validate_horizontal_flipping(Board, Row, Number, Height,Length, Piece, NewBoard, List, ListRight, ListLeft).
-try_to_flip_horizontal(_, _, Board, _, Board):-
+try_to_flip_horizontal(_, _, Board, _, Board, _, _):-
 	!,
 	fail.
 

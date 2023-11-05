@@ -186,6 +186,7 @@ display_move(state(Turn,Red,_,_,_,_), move(Number, Letter)):-
 	write('-----> Press ENTER to continue!\n'),
 	get_char(_),
 	nl.
+% Human player played
 display_move(_,_).
 
 % --------------------------------------------------------
@@ -209,7 +210,7 @@ create_board(Board, Height, Length, Acc) :-
     create_board(Board, Height1, Length, [Row | Acc]).
 % create_row(+Lenght, -Row)
 % Creates a row
-% Finished creating the row so it returns the row. Creates it in the recursive call
+% Finished creating the row so it returns the row. Creates it in the recursive call.
 create_row(0, []).
 create_row(Length, [x | Tail]) :-
     Length > 0,

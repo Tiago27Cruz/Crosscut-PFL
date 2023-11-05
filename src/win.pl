@@ -35,8 +35,11 @@ check_vertical_win(state(_,_,_,Board,Height,_), CurLetter, Winner):-
 	nth1(2, Board, Row), % Get the top row
 	TopNumber is Height - 1,
 	nth1(CurLetter, Row, Winner), % Get the letter of the top row
-	count_down(Board, TopNumber, CurLetter, Winner, Winner, 0, Result), % Check if there are (Height - 2) consecutive pieces of the same color in a vertical line
-	Result >= Height - 2, % If yes, there is a vertical win
+	Winner \= x,
+	reverse(Board, ReversedBoard),
+	count_down(ReversedBoard, TopNumber, CurLetter, Winner, Winner, 0, Result), % Check if there are (Height - 2) consecutive pieces of the same color in a vertical line
+	WinningCondition is Height - 2,
+	Result >= WinningCondition, % If true, there is a vertical win
 	!.
 % Case in which there is no vertical win so it checks the next row
 check_vertical_win(state(_,_,_,Board,Height,Length), CurLetter, Winner):-
@@ -56,8 +59,10 @@ check_horizontal_win(state(_,_,_,_,Height,_), Height,x):-!.
 check_horizontal_win(state(_,_,_,Board,_,Length),CurNumber,Winner):-
 	nth1(CurNumber, Board, Row), % Get the row
 	nth1(2, Row, Winner), % Get the letter of the row
+	Winner \= x,
 	count_right(Row, 2, Length, Winner, Winner, 0, Result), % Check if there are (Length - 2) consecutive pieces of the same color in a horizontal line
-	Result >= Length - 2, % If yes, there is a horizontal win
+	WinningCondition is Length - 2,
+	Result >= WinningCondition, % If true, there is a horizontal win
 	!.
 % Case in which there is no horizontal win so it checks the next row
 check_horizontal_win(state(_,_,_,Board,Height,Length),CurNumber,Winner):-
