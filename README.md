@@ -1,6 +1,6 @@
 # CrossCut
 Primeiro projeto realizado no âmbito da disciplina de PFL.
-
+ 
 ### Desenvolvido pelo Grupo Crosscut_1 da Turma 01
 - Isabel Maria Lima Moutinho (up202108767) - 50%
 - Tiago Ribeiro de Sá Cruz (up202108810) - 50%
@@ -12,7 +12,7 @@ Primeiro projeto realizado no âmbito da disciplina de PFL.
 
 ## Descrição do Jogo
 
-O crosscut joga-se num tabuleiro quadrado, pelo menos 5x5 e menos de 10x10. Os dois jogadores azul e vermelho jogam à vez colocando discos no tabuleiro, um disco por turno, começando com o vermelho. É obrigatório jogar. Se não houverem jogadas válidas disponíveis, o seu turno é passado à frente. <br>
+O crosscut joga-se num tabuleiro retangular, pelo menos 5x5 e menos de 10x10. Os dois jogadores azul e vermelho jogam à vez colocando discos no tabuleiro, um disco por turno, começando com o vermelho. É obrigatório jogar. Se não houverem jogadas válidas disponíveis, o seu turno é passado à frente. <br>
 O objetivo do jogo é formar um segmento (horizontal ou vertical) de um lado ao outro, sem contar com as bordas. <br>
 Um jogador poderá colocar uma peça em todos os locais do tabuleiro, menos nas bordas, a não ser que consiga fazer um 'flip'. Um 'flip' consiste em, quando um jogador coloca as suas peças nos cantos de peças do adversário, então as peças do adversário tornam-se suas, a não ser que, o segmento flanqueado do adversário seja maior ou igual ao novo segmento do jogador. Caso este 'flip' legal seja atingido, um jogador poderá colocar a sua peça na borda temporariamente, de modo a fazer o 'flip', mas de seguida essa mesma peça será retirada.
 
@@ -32,6 +32,7 @@ A informação guardada relevante ao estado do jogo é a seguinte:
 - Altura da Board.
 - Largura da Board.
   
+  
 #### Board
 A board é representada como uma lista de listas, em que cada lista corresponde a uma linha desta. 
 O elemento duma lista pode ter o valor de x, 'B' e 'R', sendo que x corresponde a uma célula da Board desocupada, 
@@ -41,13 +42,14 @@ No estado inicial a representação interna da Board está preenchida com x,
 que são modificados para a string indicativa da peça de um jogador, 'B' ou 'R',
 quando este faz uma jogada.
 
-    Estado da Board Inicial:        Possível estado da Board intermédio:        Possivel estado da Board final:
-    [ [x,x,x,x,x,x],                [ [x, x , x , x , x ,x],                    [ [x, x , x , x , x ,x],
-      [x,x,x,x,x,x],                  [x,'B', x , x , x ,x],                      [x,'B', x , x , x ,x],
-      [x,x,x,x,x,x],                  [x,'R', x ,'R','B',x],                      [x,'R','R','R','R',x],
-      [x,x,x,x,x,x],                  [x,'R', x , x , x ,x],                      [x,'R', x , x , x ,x],
-      [x,x,x,x,x,x] ]                 [x, x , x , x , x ,x] ]                     [x, x , x , x , x ,x] ]
-
+```
+Estado Inicial:      Possível estado intermédio:    Possivel estado final:
+[ [x,x,x,x,x,x],     [ [x, x , x , x , x ,x],       [ [x, x , x , x , x ,x],
+  [x,x,x,x,x,x],       [x,'B', x , x , x ,x],         [x,'B', x , x , x ,x],
+  [x,x,x,x,x,x],       [x,'R', x ,'R','B',x],         [x,'R','R','R','R',x],
+  [x,x,x,x,x,x],       [x,'R', x , x , x ,x],         [x,'R', x , x , x ,x],
+  [x,x,x,x,x,x] ]      [x, x , x , x , x ,x] ]        [x, x , x , x , x ,x] ]
+```
 
 ### Visualização do Jogo
 Após estarem definidos os valores necessários para começar o jogo (ver Menus),
