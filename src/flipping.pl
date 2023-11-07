@@ -331,7 +331,7 @@ check_prohibited_horizontal_flip(Board, [Letter|Tail], Row, Number, FlipSize, He
     count_down(Board, Number, Letter, Piece, Piece, -1, Down), % Counts the number of pieces of the same type as Piece below the current position
     Size is Up + Down + 1, % Calculates the size of the vertical segment, +1 because it counts the current piece
     FlipSize > Size, % Checks if the size of the vertical segment is smaller than the size of the flip
-    check_prohibited_horizontal_flip(Board, Tail, Row, Number, FlipSize). % Recursive call to check the next vertical segment
+    check_prohibited_horizontal_flip(Board, Tail, Row, Number, FlipSize, Height). % Recursive call to check the next vertical segment
 
 % count_up(+Board, +CurPos, +Letter, +Height, +CurPiece, +Piece, +Count, -Final)
 % Counts the number of pieces of the same type as Piece above the current position
