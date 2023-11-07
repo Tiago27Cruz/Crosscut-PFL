@@ -1,9 +1,0 @@
-clear_buffer:-
-	repeat,
-	get_char(C),
-	C='\n',
-	!.
-	
-state(TurnoN, Player1Info, Player2Info, Board).
-
-display_game(State).
