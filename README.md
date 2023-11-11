@@ -12,7 +12,7 @@ Primeiro projeto realizado no âmbito da disciplina de PFL.
 
 ## Descrição do Jogo
 
-O crosscut, desenvolvido por [Mark Steere](https://www.marksteeregames.com/) joga-se num tabuleiro retangular, pelo menos 5x5 e menos de 10x10. Os dois jogadores azul e vermelho jogam à vez colocando discos no tabuleiro, um disco por turno, começando com o vermelho. É obrigatório jogar. Se não houverem jogadas válidas disponíveis, o seu turno é passado à frente. <br>
+O crosscut, desenvolvido por [Mark Steere](https://www.marksteeregames.com/), joga-se num tabuleiro retangular, pelo menos 5x5 e menos de 10x10. Os dois jogadores azul e vermelho jogam à vez colocando discos no tabuleiro, um disco por turno, começando com o vermelho. É obrigatório jogar. Se não houverem jogadas válidas disponíveis, o seu turno é passado à frente. <br>
 O objetivo do jogo é formar um segmento (horizontal ou vertical) de um lado ao outro, sem contar com as bordas. <br>
 Um jogador poderá colocar uma peça em todos os locais do tabuleiro, menos nas bordas, a não ser que consiga fazer um 'flip'. Um 'flip' consiste em, quando um jogador coloca as suas peças nos cantos de peças do adversário, então as peças do adversário tornam-se suas, a não ser que, o segmento flanqueado do adversário seja maior ou igual ao novo segmento do jogador. Caso este 'flip' legal seja atingido, um jogador poderá colocar a sua peça na borda temporariamente, de modo a fazer o 'flip', mas de seguida essa mesma peça será retirada.
 
